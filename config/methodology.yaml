@@ -1,0 +1,74 @@
+# AeroDex methodology configuration — plan §5.5.
+# This file is SHA-256 hashed and the hash is stamped onto every index_point
+# row and every published artifact. Changing it changes the hash, by design.
+# Config in code is not auditable (plan §5.5); nothing here may move into Python.
+version: 1
+config_schema: 1
+
+base:
+  # Index reference period. base_value is the index level at base_period.
+  period: "2026-09"
+  value: 100.0
+
+elementary:
+  # Jevons = geometric mean of price relatives. Carli has known upward bias;
+  # Dutot is not unit-invariant and is wrong for heterogeneous items (plan §5.5).
+  formula: jevons
+  # A stratum needs at least this many matched quotes in both periods to
+  # contribute an observed relative; below it, the stratum is imputed.
+  min_matched_quotes: 3
+  # Price relatives outside this band are treated as data errors, not signal.
+  relative_clip: [0.2, 5.0]
+
+hedonic:
+  enabled: true
+  # OLS on log(fare). Characteristics held constant across the comparison.
+  model: ols_log_fare
+  characteristics:
+    - stops
+    - departure_time_bucket
+    - carrier_type          # full_service | low_cost
+    - duration_minutes
+    - is_refundable
+    - baggage_included
+  min_observations: 200     # below this the hedonic model is not fitted
+  fallback: matched_model   # if the model cannot be fitted for a period
+
+aggregation:
+  # Lowe/Laspeyres with fixed DGCA traffic weights. Fisher/Tornqvist need
+  # current-period quantities this project does not have (plan §5.5).
+  formula: lowe
+  weight_source: dgca_traffic
+  weights_vintage: "dgca-2026-placeholder"
+  # Route weights are renormalised over routes that actually reported.
+  renormalise_on_missing: true
+
+imputation:
+  # M5: imputed weight must stay <= 5% of index weight, and the realised
+  # share is published alongside every index point, never silently absorbed.
+  method: stratum_group_mean   # mean movement of the route's horizon group
+  max_weight_share: 0.05
+  publish_share: true
+
+seasonal:
+  daily:   {method: stl, period: 7,  robust: true}
+  weekly:  {method: stl, period: 52, robust: true}
+  # X-13ARIMA-SEATS binary is x86-only; if it will not build on ARM, set this
+  # to stl and note X-13 as future work (plan §5.5 caveat). Do not burn a week.
+  monthly: {method: x13, fallback: stl}
+
+chaining:
+  # Chain-linked monthly; annual overlap link. Prevents drift from panel churn.
+  frequency: monthly
+  link: annual_overlap
+
+revision:
+  # Published numbers are provisional for this many days, then frozen forever.
+  provisional_days: 7
+  policy: "Provisional for 7 days; revised once on day 7; frozen thereafter. Every revision publishes a diff against the superseded value."
+
+validation:
+  fare_min_inr: 800
+  fare_max_inr: 200000
+  max_duration_minutes: 900
+  require_all_inclusive: true   # taxes + surcharges must be in the fare

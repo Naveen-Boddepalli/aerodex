@@ -1,0 +1,87 @@
+# AeroDex panel definition — plan §3 (sizing) and M1 (>= 60 O-D pairs).
+# 60 routes x 7 horizons x 3 slots => 1,260 stratum-slots/day nominal,
+# ~1,155 after overlap suppression (see collection.overlap_suppression).
+version: 1
+weights_vintage: "dgca-2026-placeholder"   # replaced by S4 output; see plan §5.8
+
+cabins: [economy]
+
+# Days between collection date and departure date.
+horizons_days: [1, 3, 7, 14, 21, 30, 60]
+
+# Fixed IST collection slots. Methodology defines a slot as a +/-15 min window
+# (plan §5.1) so late collection degrades gracefully instead of voiding a stratum.
+slots:
+  - {id: morning,   local_time: "07:00", tz: "Asia/Kolkata"}
+  - {id: afternoon, local_time: "13:00", tz: "Asia/Kolkata"}
+  - {id: evening,   local_time: "20:00", tz: "Asia/Kolkata"}
+
+collection:
+  slot_tolerance_minutes: 15
+  overlap_suppression: true    # skip a (route,horizon,slot) already collected < 4h ago
+  min_seconds_between_requests_per_host: 20   # plan §7 — enforced in compliance.py
+
+# weight = share of domestic scheduled passengers on that O-D pair.
+# PLACEHOLDER VALUES: uniform pending DGCA parse (Phase 0 spike S4).
+# Do not publish an index off these — index_point records weights_vintage.
+routes:
+  - {origin: DEL, destination: BOM, weight: null}
+  - {origin: DEL, destination: BLR, weight: null}
+  - {origin: BOM, destination: BLR, weight: null}
+  - {origin: DEL, destination: CCU, weight: null}
+  - {origin: DEL, destination: HYD, weight: null}
+  - {origin: DEL, destination: MAA, weight: null}
+  - {origin: BOM, destination: DEL, weight: null}
+  - {origin: BLR, destination: DEL, weight: null}
+  - {origin: BOM, destination: HYD, weight: null}
+  - {origin: BOM, destination: MAA, weight: null}
+  - {origin: BLR, destination: BOM, weight: null}
+  - {origin: BLR, destination: HYD, weight: null}
+  - {origin: BLR, destination: MAA, weight: null}
+  - {origin: BLR, destination: CCU, weight: null}
+  - {origin: CCU, destination: DEL, weight: null}
+  - {origin: CCU, destination: BOM, weight: null}
+  - {origin: CCU, destination: BLR, weight: null}
+  - {origin: HYD, destination: DEL, weight: null}
+  - {origin: HYD, destination: BOM, weight: null}
+  - {origin: MAA, destination: DEL, weight: null}
+  - {origin: MAA, destination: BOM, weight: null}
+  - {origin: DEL, destination: AMD, weight: null}
+  - {origin: DEL, destination: PNQ, weight: null}
+  - {origin: DEL, destination: GOX, weight: null}
+  - {origin: DEL, destination: COK, weight: null}
+  - {origin: DEL, destination: JAI, weight: null}
+  - {origin: DEL, destination: LKO, weight: null}
+  - {origin: DEL, destination: IXC, weight: null}
+  - {origin: DEL, destination: PAT, weight: null}
+  - {origin: DEL, destination: GAU, weight: null}
+  - {origin: DEL, destination: BBI, weight: null}
+  - {origin: DEL, destination: VNS, weight: null}
+  - {origin: DEL, destination: SXR, weight: null}
+  - {origin: DEL, destination: ATQ, weight: null}
+  - {origin: DEL, destination: IDR, weight: null}
+  - {origin: DEL, destination: NAG, weight: null}
+  - {origin: DEL, destination: TRV, weight: null}
+  - {origin: DEL, destination: VTZ, weight: null}
+  - {origin: BOM, destination: AMD, weight: null}
+  - {origin: BOM, destination: GOX, weight: null}
+  - {origin: BOM, destination: COK, weight: null}
+  - {origin: BOM, destination: JAI, weight: null}
+  - {origin: BOM, destination: LKO, weight: null}
+  - {origin: BOM, destination: IDR, weight: null}
+  - {origin: BOM, destination: NAG, weight: null}
+  - {origin: BOM, destination: PAT, weight: null}
+  - {origin: BOM, destination: BBI, weight: null}
+  - {origin: BOM, destination: VNS, weight: null}
+  - {origin: BOM, destination: TRV, weight: null}
+  - {origin: BLR, destination: COK, weight: null}
+  - {origin: BLR, destination: AMD, weight: null}
+  - {origin: BLR, destination: PNQ, weight: null}
+  - {origin: BLR, destination: GOX, weight: null}
+  - {origin: BLR, destination: TRV, weight: null}
+  - {origin: BLR, destination: VTZ, weight: null}
+  - {origin: MAA, destination: HYD, weight: null}
+  - {origin: MAA, destination: COK, weight: null}
+  - {origin: MAA, destination: CCU, weight: null}
+  - {origin: HYD, destination: CCU, weight: null}
+  - {origin: HYD, destination: VTZ, weight: null}

@@ -1,0 +1,21 @@
+# Festival and vacation regressors — plan §5.8.
+# Hand-maintained, ~30 rows/year. Do not over-engineer this.
+version: 1
+timezone: "Asia/Kolkata"
+
+# Windows are inclusive. `lead_days` marks the pre-travel booking surge that
+# moves fares before the event itself.
+festivals:
+  - {name: "Diwali",            start: "2026-11-06", end: "2026-11-11", lead_days: 21}
+  - {name: "Dussehra",          start: "2026-10-19", end: "2026-10-21", lead_days: 14}
+  - {name: "Christmas/New Year",start: "2026-12-22", end: "2027-01-02", lead_days: 30}
+  - {name: "Holi",              start: "2027-03-03", end: "2027-03-04", lead_days: 14}
+  - {name: "Eid al-Fitr",       start: "2027-03-20", end: "2027-03-21", lead_days: 14}
+  - {name: "Ganesh Chaturthi",  start: "2026-09-14", end: "2026-09-16", lead_days: 10}
+  - {name: "Onam",              start: "2026-08-26", end: "2026-08-28", lead_days: 14}
+  - {name: "Durga Puja",        start: "2026-10-16", end: "2026-10-20", lead_days: 21}
+
+vacations:
+  - {name: "Summer school holidays", start: "2027-05-01", end: "2027-06-15"}
+  - {name: "Winter school holidays", start: "2026-12-20", end: "2027-01-05"}
+  - {name: "Puja holidays (East)",   start: "2026-10-15", end: "2026-10-24"}
