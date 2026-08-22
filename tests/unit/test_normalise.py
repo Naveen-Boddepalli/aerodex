@@ -1,13 +1,13 @@
 """Normalisation rules — the itinerary key is the crux (plan §5.5)."""
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
 from aerodex.acquire.base import Quote, SearchRequest
 from aerodex.normalise import departure_time_bucket, itinerary_key, normalise_quotes
 
-NOW = datetime(2026, 9, 1, 7, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 9, 1, 7, 0, tzinfo=UTC)
 
 
 def _q(*, horizon=7, coll_date=date(2026, 9, 1), flight="6E1033", fare=500000,

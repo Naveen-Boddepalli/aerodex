@@ -11,8 +11,9 @@ index: the publisher refuses a panel whose only source is this one.
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Iterable
 from datetime import datetime
-from typing import Any, Iterable
+from typing import Any
 
 from aerodex.acquire.base import Adapter, Quote, SearchRequest, Tier
 

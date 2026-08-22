@@ -1,0 +1,15 @@
+# Nightly M6 check: recompute an archived panel with its archived config and
+# diff the output hash. A failure here means a published number moved.
+name: reproducibility
+on:
+  schedule: [{cron: "30 20 * * *"}]   # 02:00 IST
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --extra dev
+      - run: uv run python -m aerodex.cli verify
+      - run: uv run pytest tests/golden -q

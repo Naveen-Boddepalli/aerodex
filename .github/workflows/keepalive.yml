@@ -1,0 +1,12 @@
+# Defeats GitHub's 60-day disable of scheduled workflows on inactive repos
+# (plan §5.1). Without this the backup collector silently stops.
+name: keepalive
+on:
+  schedule: [{cron: "0 3 */20 * *"}]
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    permissions: {actions: write}
+    steps:
+      - run: echo "keepalive $(date -u +%F)"

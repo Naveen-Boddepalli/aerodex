@@ -8,12 +8,12 @@ the coverage ratio look better than the collection actually was.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 from aerodex.normalise.normalise import CleanQuote
 
 
-class ValidationOutcome(str, Enum):
+class ValidationOutcome(StrEnum):
     VALID = "valid"
     QUARANTINED = "quarantined"
     REJECTED = "rejected"

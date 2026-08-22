@@ -7,7 +7,7 @@ mode is silent and reads as success, so it is tested explicitly.
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 import pandas as pd
 import pytest
@@ -29,7 +29,7 @@ def _panel_frame(days: int = 4, strata_limit: int = 12) -> pd.DataFrame:
         collection_day = date(2026, 9, 1) + timedelta(days=d)
         reqs = build_requests(PANEL, "morning", today=collection_day)[:strata_limit]
         for req in reqs:
-            for q in adapter.emit(req, datetime(2026, 9, 1 + d, 7, 0, tzinfo=timezone.utc)):
+            for q in adapter.emit(req, datetime(2026, 9, 1 + d, 7, 0, tzinfo=UTC)):
                 c = normalise_quotes([q])[0]
                 rows.append(
                     {
@@ -75,7 +75,7 @@ def test_index_movement_is_plausible():
 def test_collect_reports_full_success_on_fixture():
     reqs = build_requests(PANEL, "morning", today=date(2026, 9, 1))[:20]
     report = collect(
-        FixtureAdapter(), reqs, CONFIG.raw, now=datetime(2026, 9, 1, tzinfo=timezone.utc)
+        FixtureAdapter(), reqs, CONFIG.raw, now=datetime(2026, 9, 1, tzinfo=UTC)
     )
     assert report.scheduled == 20
     assert report.succeeded == 20

@@ -20,10 +20,11 @@ from __future__ import annotations
 import hashlib
 import json
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import IntEnum
-from typing import Any, Iterable
+from typing import Any
 
 from aerodex.compliance import (
     USER_AGENT,

@@ -53,10 +53,7 @@ def lowe(
         return float("nan"), 0.0
 
     ww = w[reported]
-    if renormalise_on_missing:
-        ww = ww / reported_weight
-    else:
-        ww = ww / total_weight
+    ww = ww / reported_weight if renormalise_on_missing else ww / total_weight
 
     # Aggregate in log space, consistent with the Jevons elementary level.
     value = float(np.exp(np.sum(ww.to_numpy() * np.log(s[reported].to_numpy()))))

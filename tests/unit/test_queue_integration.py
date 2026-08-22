@@ -6,8 +6,7 @@ against a mock: the whole point is what two concurrent transactions do.
 
 from __future__ import annotations
 
-import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -37,7 +36,7 @@ def conn():
     c.close()
 
 
-PAST = datetime.now(timezone.utc) - timedelta(minutes=1)
+PAST = datetime.now(UTC) - timedelta(minutes=1)
 
 
 def test_enqueue_then_dequeue(conn):
@@ -103,7 +102,7 @@ def test_complete_clears_the_job(conn):
 
 def test_future_jobs_are_not_served_early(conn):
     """A slot scheduled for 20:00 must not run at 13:00."""
-    queue.enqueue(conn, "test_collect", {"z": 3}, datetime.now(timezone.utc) + timedelta(hours=2))
+    queue.enqueue(conn, "test_collect", {"z": 3}, datetime.now(UTC) + timedelta(hours=2))
     assert queue.dequeue(conn, "test_collect") == []
 
 

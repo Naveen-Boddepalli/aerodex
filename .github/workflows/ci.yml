@@ -1,0 +1,32 @@
+name: ci
+on:
+  push: {branches: [main]}
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: timescale/timescaledb:2.17.2-pg16
+        env:
+          POSTGRES_USER: aerodex
+          POSTGRES_PASSWORD: aerodex
+          POSTGRES_DB: aerodex
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U aerodex -d aerodex"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      AERODEX_DSN: postgresql://aerodex:aerodex@localhost:5433/aerodex
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --extra dev
+      - name: Apply schema
+        run: uv run python -m aerodex.cli init-db
+      - name: Lint
+        run: uv run ruff check .
+      - name: Tests
+        run: uv run pytest -q --ignore=tests/canary
+      - name: Golden / M6 reproducibility
+        run: uv run python -m aerodex.cli verify

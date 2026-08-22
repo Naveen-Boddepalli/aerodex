@@ -1,0 +1,17 @@
+# Templated collection unit: one instance per slot, e.g.
+#   systemctl enable --now aerodex-collect@morning.timer
+[Unit]
+Description=AeroDex fare collection (%i slot)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=aerodex
+WorkingDirectory=/opt/aerodex
+Environment="AERODEX_DSN=postgresql://aerodex@localhost/aerodex"
+ExecStart=/opt/aerodex/.venv/bin/python -m aerodex.cli collect --slot %i --store
+# A slot that has not finished within the window is late, not useful: kill it
+# so the next slot starts clean rather than two collectors overlapping.
+TimeoutStartSec=3600
+Nice=5

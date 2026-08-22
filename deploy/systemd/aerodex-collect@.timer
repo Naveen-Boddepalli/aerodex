@@ -1,0 +1,18 @@
+# systemd timers, not cron (plan §5.1): OnCalendar, jitter control and journal
+# integration for free. GitHub Actions' 10-30 min drift is what disqualified it
+# as primary -- a "07:00 slot" that fires at 07:26 silently corrupts the
+# intraday-drift control that makes the index defensible.
+[Unit]
+Description=AeroDex collection timer (%i slot)
+
+[Timer]
+# Slot times are IST; the VM runs in Asia/Kolkata.
+OnCalendar=%i
+Persistent=true
+# Small jitter spreads load without breaking the +/-15 min slot window.
+RandomizedDelaySec=120
+AccuracySec=30s
+Unit=aerodex-collect@%i.service
+
+[Install]
+WantedBy=timers.target

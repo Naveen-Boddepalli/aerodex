@@ -12,7 +12,8 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import date, datetime, time, timezone
+from datetime import UTC, date, datetime, time
+from pathlib import Path
 
 from aerodex.acquire.collect import IST
 from aerodex.config import MethodologyConfig, PanelConfig
@@ -72,7 +73,7 @@ def _cmd_collect(args) -> int:
         hh, mm = (int(x) for x in str(slot_cfg["local_time"]).split(":"))
         collected_at = datetime.combine(today, time(hh, mm), tzinfo=IST)
     else:
-        collected_at = datetime.now(timezone.utc)
+        collected_at = datetime.now(UTC)
     if args.limit:
         requests = requests[: args.limit]
 
@@ -157,7 +158,7 @@ def _cmd_verify(args) -> int:
 
     from aerodex.index.engine import compute_index, output_hash
 
-    expected = json.loads(open(args.hashes).read())
+    expected = json.loads(Path(args.hashes).read_text())
     panel_df = pd.read_csv(args.panel_csv)
     meth = MethodologyConfig.load()
 

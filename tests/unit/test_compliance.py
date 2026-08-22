@@ -82,7 +82,8 @@ def test_unreachable_robots_means_disallowed():
 
 def test_robots_disallow_is_honoured():
     cache = RobotsCache()
-    assert cache.allows("https://y.test/search", lambda u: "User-agent: *\nDisallow: /search\n") is False
+    robots = "User-agent: *\nDisallow: /search\n"
+    assert cache.allows("https://y.test/search", lambda u: robots) is False
 
 
 def test_robots_allow_passes():
