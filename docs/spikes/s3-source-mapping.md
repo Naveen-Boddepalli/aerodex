@@ -1,3 +1,5 @@
+> **SUPERSEDED BY:** `docs/research/s3/FINAL_S3_CONCLUSION.md` — its verdict "zero sources are currently usable" was falsified by `s3-redo.md`, which found regulator-mandated tariff sheets. Its core finding (OTA terms prohibit automated collection) stands. Preserved as raw evidence; the ixigo fare in `s3-evidence.json` must not be used.
+
 # Phase 0 · Spike S3 — Candidate fare source mapping
 
 **Date:** 23 August 2026 · **Question (plan §8):** for each of ~6 candidate sources,

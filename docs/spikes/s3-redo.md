@@ -1,3 +1,5 @@
+> **SUPERSEDED BY:** `docs/research/s3/FINAL_S3_CONCLUSION.md` — its "five GREEN sources" and its Tier A tariff-sheet index were both falsified by `s3-verification.md`; robots.txt was never checked separately from terms, and fare levels are not stable strata. Its T-21, AirPrice Guardian, Air India republication and Rule 135 claims were also corrected. Preserved as raw evidence.
+
 # Phase 0 · Spike S3 (redo) — adversarial re-examination
 
 **Date:** 23 August 2026 · **Brief:** disprove the S3 NO-GO if possible; search far wider than

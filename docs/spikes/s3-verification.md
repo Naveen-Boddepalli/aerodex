@@ -1,3 +1,5 @@
+> **CARRIED FORWARD INTO:** `docs/research/s3/FINAL_S3_CONCLUSION.md` — this pass remains authoritative on the tariff sheets and on the empirical comparability test. Not superseded; consolidated. Its quantitative results are preserved in `docs/research/s3/evidence/tariff-comparability-results.md`.
+
 # Phase 0 · Spike S3 — independent verification of the redo
 
 **Date:** 23 August 2026 · **Task:** verify every load-bearing claim in `s3-redo.md` against

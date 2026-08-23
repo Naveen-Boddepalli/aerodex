@@ -1,3 +1,5 @@
+> **PARTIALLY SUPERSEDED BY:** `docs/research/s3/evidence/esankhyiki-investigation.md` — the substance stands, but two claims were softened: "does not contain, and has never contained" overreaches (established: not *publicly published*), and `mospi-esankhyiki` is not evidently an official MoSPI SDK (PyPI lists individual authors, alpha status).
+
 # S3 Addendum — eSankhyiki Dataset Link Investigation
 
 **Date:** 23 August 2026
