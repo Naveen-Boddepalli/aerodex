@@ -17,8 +17,12 @@ import pytest
 
 # Ensure the scripts directory is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
-from parse_dgca_weights import build_weights, city_to_iata, compute_route_traffic
-
+from parse_dgca_weights import (  # noqa: E402
+    build_weights,
+    city_to_iata,
+    compute_route_traffic,
+    months_present,
+)
 
 # ---------------------------------------------------------------------------
 # city_to_iata
@@ -36,7 +40,6 @@ class TestCityToIata:
 
     def test_tier2_panel_cities(self):
         assert city_to_iata("CHANDIGARH") == "IXC"
-        assert city_to_iata("ADAMPUR") == "IXC"   # military alias → same code
         assert city_to_iata("SRINAGAR") == "SXR"
         assert city_to_iata("AMRITSAR") == "ATQ"
         assert city_to_iata("VISAKHAPATNAM") == "VTZ"
@@ -45,6 +48,13 @@ class TestCityToIata:
     def test_delhi_aliases_all_map_to_del(self):
         for name in ("DELHI", "NEW DELHI", "GHAZIABAD", "HINDON AIRPORT"):
             assert city_to_iata(name) == "DEL", f"{name} should map to DEL"
+
+    def test_adampur_is_not_a_chandigarh_alias(self):
+        """Regression: ADAMPUR was folded into IXC, inflating Chandigarh by 2.1%
+        of 2025 passengers. Adampur (Jalandhar) is its own airport ~90 km away
+        and appears as a separate DGCA city."""
+        assert city_to_iata("ADAMPUR") == "AIP"
+        assert city_to_iata("ADAMPUR") != city_to_iata("CHANDIGARH")
 
     def test_goa_aliases(self):
         assert city_to_iata("GOA") == "GOX"
@@ -81,7 +91,7 @@ class TestComputeRouteTraffic:
             (2025, 1, "DELHI", "MUMBAI", 100_000, 90_000),
             (2025, 2, "DELHI", "MUMBAI", 110_000, 95_000),
         ])
-        traffic = compute_route_traffic(rows, 2025)
+        traffic = compute_route_traffic(rows, 2025, allow_partial=True)
         key = ("BOM", "DEL")
         assert key in traffic
         assert traffic[key] == pytest.approx(395_000)
@@ -92,22 +102,31 @@ class TestComputeRouteTraffic:
             (2025, 1, "BANGALORE", "MUMBAI", 80_000, 0),
             (2025, 1, "MUMBAI", "BANGALORE", 0, 70_000),
         ])
-        traffic = compute_route_traffic(rows, 2025)
+        traffic = compute_route_traffic(rows, 2025, allow_partial=True)
         key = ("BLR", "BOM")
         assert key in traffic
         assert traffic[key] == pytest.approx(150_000)
 
     def test_alias_folding(self):
-        """ADAMPUR and CHANDIGARH both → IXC; should not create two keys."""
+        """BENGALURU and BANGALORE both → BLR; should not create two keys."""
+        rows = _make_rows([
+            (2025, 3, "BENGALURU", "DELHI", 5_000, 4_800),
+            (2025, 3, "BANGALORE", "DELHI", 12_000, 11_500),
+        ])
+        traffic = compute_route_traffic(rows, 2025, allow_partial=True)
+        assert len(traffic) == 1
+        assert ("BLR", "DEL") in traffic
+        assert traffic[("BLR", "DEL")] == pytest.approx(33_300)
+
+    def test_adampur_does_not_fold_into_chandigarh(self):
+        """The corrected mapping must keep them as separate O-D pairs."""
         rows = _make_rows([
             (2025, 3, "ADAMPUR", "DELHI", 5_000, 4_800),
             (2025, 3, "CHANDIGARH", "DELHI", 12_000, 11_500),
         ])
-        traffic = compute_route_traffic(rows, 2025)
-        # Both rows map to (DEL, IXC)
-        assert len(traffic) == 1
-        assert ("DEL", "IXC") in traffic
-        assert traffic[("DEL", "IXC")] == pytest.approx(33_300)
+        traffic = compute_route_traffic(rows, 2025, allow_partial=True)
+        assert traffic[("DEL", "IXC")] == pytest.approx(23_500)
+        assert traffic[("AIP", "DEL")] == pytest.approx(9_800)
 
     def test_same_iata_after_mapping_skipped(self):
         """DELHI and GHAZIABAD both map to DEL; the intra-DEL row should be skipped."""
@@ -115,7 +134,7 @@ class TestComputeRouteTraffic:
             (2025, 1, "DELHI", "GHAZIABAD", 99_999, 88_888),
             (2025, 1, "DELHI", "MUMBAI", 50_000, 45_000),
         ])
-        traffic = compute_route_traffic(rows, 2025)
+        traffic = compute_route_traffic(rows, 2025, allow_partial=True)
         assert ("DEL", "DEL") not in traffic
         assert ("BOM", "DEL") in traffic
 
@@ -124,7 +143,7 @@ class TestComputeRouteTraffic:
             (2025, 1, "ATLANTIS", "DELHI", 1_000, 900),
             (2025, 1, "MUMBAI", "DELHI", 200_000, 180_000),
         ])
-        traffic = compute_route_traffic(rows, 2025)
+        traffic = compute_route_traffic(rows, 2025, allow_partial=True)
         assert len(traffic) == 1  # ATLANTIS row skipped
 
     def test_wrong_year_raises(self):
@@ -136,7 +155,7 @@ class TestComputeRouteTraffic:
         rows = _make_rows([
             (2025, m, "DELHI", "BANGALORE", 50_000, 48_000) for m in range(1, 13)
         ])
-        traffic = compute_route_traffic(rows, 2025)
+        traffic = compute_route_traffic(rows, 2025, allow_partial=True)
         assert traffic[("BLR", "DEL")] == pytest.approx(12 * 98_000)
 
 
@@ -183,3 +202,36 @@ class TestBuildWeights:
         _, matched, missing = build_weights(routes, traffic)
         assert "DEL-BOM" in matched
         assert "DEL-SXR" in missing
+
+
+# ---------------------------------------------------------------------------
+# Complete-year guard
+# ---------------------------------------------------------------------------
+
+class TestYearCompleteness:
+    def test_partial_year_refused_by_default(self):
+        """Annual weights from a partial year are seasonally skewed, and the
+        vintage string still reads as authoritative. Refuse rather than warn."""
+        rows = _make_rows([(2025, m, "DELHI", "MUMBAI", 1000, 900) for m in (1, 2, 3)])
+        with pytest.raises(ValueError, match="incomplete"):
+            compute_route_traffic(rows, 2025)
+
+    def test_partial_year_names_the_missing_months(self):
+        rows = _make_rows([(2025, m, "DELHI", "MUMBAI", 1, 1) for m in range(1, 12)])
+        with pytest.raises(ValueError, match=r"\[12\]"):
+            compute_route_traffic(rows, 2025)
+
+    def test_complete_year_passes_without_the_flag(self):
+        rows = _make_rows([(2025, m, "DELHI", "MUMBAI", 1000, 900) for m in range(1, 13)])
+        traffic = compute_route_traffic(rows, 2025)
+        assert traffic[("BOM", "DEL")] == pytest.approx(12 * 1900)
+
+    def test_allow_partial_opts_in(self):
+        rows = _make_rows([(2025, 1, "DELHI", "MUMBAI", 1000, 900)])
+        assert compute_route_traffic(rows, 2025, allow_partial=True)
+
+    def test_months_present(self):
+        rows = _make_rows([(2025, 1, "DELHI", "MUMBAI", 1, 1),
+                           (2025, 5, "DELHI", "MUMBAI", 1, 1),
+                           (2024, 9, "DELHI", "MUMBAI", 1, 1)])
+        assert months_present(rows, 2025) == {1, 5}

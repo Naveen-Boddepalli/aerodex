@@ -96,3 +96,44 @@ def test_coverage_hole_is_imputed_and_flagged(panel, config):
     assert last["coverage_ratio"] < 1.0
     assert last["imputed_weight_share"] > 0
     assert bool(last["imputation_ceiling_breached"]) is True
+
+
+# --- weighted index (S4) -----------------------------------------------------
+#
+# The golden panel is computed unweighted above. Weights reach the engine via a
+# separate argument, so without these the DGCA weights have no regression cover
+# at all: they could change, or silently stop being passed, and every test would
+# still pass.
+
+from aerodex.config import PanelConfig  # noqa: E402
+
+PANEL_CFG = PanelConfig.load()
+
+
+def test_weights_change_the_published_number(panel, config):
+    """If this ever passes trivially, the weights are not reaching the engine."""
+    weights = {k: float(v) for k, v in PANEL_CFG.weights().items() if v is not None}
+    unweighted = compute_index(panel, config)
+    weighted = compute_index(panel, config, weights=weights)
+    assert output_hash(unweighted) != output_hash(weighted)
+
+
+def test_weighted_index_is_frozen(panel, config):
+    """M6 for the weighted path — the one the CLI actually publishes."""
+    weights = {k: float(v) for k, v in PANEL_CFG.weights().items() if v is not None}
+    got = output_hash(compute_index(panel, config, weights=weights))
+    assert got == HASHES["weighted_output_hash"], (
+        "the weighted index moved. If deliberate (weights regenerated, mapping "
+        "revised), bump MAPPING_REVISION and re-freeze — never re-freeze to "
+        "silence this."
+    )
+
+
+def test_weighted_imputation_share_uses_real_weights(panel, config):
+    """Under uniform weights the golden hole is 1/9 of weight; under DGCA
+    weights it is the missing stratum's actual share. A drift back to 1/9
+    means weights stopped being applied."""
+    weights = {k: float(v) for k, v in PANEL_CFG.weights().items() if v is not None}
+    out = compute_index(panel, config, weights=weights)
+    share = float(out.iloc[-1]["imputed_weight_share"])
+    assert 0 < share < 1 / 9, f"imputed share {share} looks uniform, not weighted"

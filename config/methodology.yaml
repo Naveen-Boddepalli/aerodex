@@ -37,9 +37,26 @@ hedonic:
 aggregation:
   # Lowe/Laspeyres with fixed DGCA traffic weights. Fisher/Tornqvist need
   # current-period quantities this project does not have (plan §5.5).
+  #
+  # Weight construction (scripts/parse_dgca_weights.py, spike S4):
+  #   * source is DGCA city-pair passenger data for a COMPLETE calendar year,
+  #     via Vonter/india-aviation-traffic (ODbL). Partial years are refused:
+  #     they are seasonally skewed and the vintage would still read as annual.
+  #   * directional strata (DEL-BOM and BOM-DEL are separate panel rows) are
+  #     each weighted by their city pair's TOTAL traffic, then renormalised
+  #     across the panel. DGCA publishes the directional split and this
+  #     discards it; measured effect on relative weights is ~0.3%, because
+  #     Indian trunk traffic is close to symmetric. Revisit if the panel ever
+  #     carries markedly asymmetric routes.
+  #   * Goa is a city-level roll-up: DGCA reports one "GOA" city spanning
+  #     Dabolim (GOI) and Manohar/Mopa (GOX). The panel samples GOX and is
+  #     assigned the whole city's traffic.
+  #   * weights_vintage carries a mapping revision (…-r2). Bump it whenever
+  #     CITY_TO_IATA changes: a mapping correction moves published numbers, and
+  #     one vintage string must never describe two different weight sets.
   formula: lowe
   weight_source: dgca_traffic
-  weights_vintage: "dgca-2025-city-pairs"
+  weights_vintage: "dgca-2025-city-pairs-r2"
   # Route weights are renormalised over routes that actually reported.
   renormalise_on_missing: true
 

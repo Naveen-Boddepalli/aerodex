@@ -40,6 +40,13 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PANEL_YAML = REPO_ROOT / "config" / "panel.yaml"
 
+#: Bump whenever CITY_TO_IATA changes. The vintage must identify the weights,
+#: not just the source year - a mapping correction moves published numbers, and
+#: two different weight sets sharing one vintage string breaks the audit trail
+#: that M6 rests on.
+#:   r2 - ADAMPUR unfolded from IXC (was inflating Chandigarh by 2.1% of pax)
+MAPPING_REVISION = "r2"
+
 DGCA_CSV_URL = (
     "https://raw.githubusercontent.com/Vonter/india-aviation-traffic/"
     "main/aggregated/domestic/city.csv"
@@ -64,14 +71,22 @@ CITY_TO_IATA: dict[str, str] = {
     # Tier-2 cities in panel
     "AHMEDABAD": "AMD",
     "PUNE": "PNQ",
-    "GOA": "GOX",           # Goa International (Dabolim)
-    "MOPA": "GOX",          # Manohar International - also serves Goa
+    # Deliberate city-level roll-up, documented in methodology.yaml:
+    # DGCA reports a single "GOA" city covering both Goa airports (Dabolim GOI
+    # and Manohar/Mopa GOX). The panel samples GOX, so Goa city traffic is
+    # attributed to GOX. GOX is Manohar (Mopa) - it is NOT Dabolim.
+    "GOA": "GOX",
+    "MOPA": "GOX",          # Manohar International, should DGCA split it out
     "COCHIN": "COK",
     "KOCHI": "COK",
     "JAIPUR": "JAI",
     "LUCKNOW": "LKO",
     "CHANDIGARH": "IXC",
-    "ADAMPUR": "IXC",       # DGCA sometimes uses Adampur (military/civil shared)
+    # NOT an alias of Chandigarh: Adampur (Jalandhar) is its own airport, ~90 km
+    # away. Folding it into IXC inflated Chandigarh by 2.1% of 2025 pax. It is
+    # mapped to its real code so it is classified, not silently dropped; AIP is
+    # not in the panel, so it contributes nothing.
+    "ADAMPUR": "AIP",
     "PATNA": "PAT",
     "GUWAHATI": "GAU",
     "BHUBANESWAR": "BBI",
@@ -140,9 +155,16 @@ def parse_csv(text: str) -> list[dict[str, Any]]:
 # Weight computation
 # ---------------------------------------------------------------------------
 
+def months_present(rows: list[dict[str, Any]], year: int) -> set[int]:
+    """Calendar months with data for *year*."""
+    return {r["month"] for r in rows if r["year"] == year}
+
+
 def compute_route_traffic(
     rows: list[dict[str, Any]],
     year: int,
+    *,
+    allow_partial: bool = False,
 ) -> dict[tuple[str, str], float]:
     """Sum bidirectional passenger traffic per IATA O-D pair for *year*.
 
@@ -154,6 +176,17 @@ def compute_route_traffic(
     year_rows = [r for r in rows if r["year"] == year]
     if not year_rows:
         raise ValueError(f"No data found for year {year} in the DGCA CSV.")
+
+    # An annual weight vintage built from a partial year is silently wrong: it
+    # is seasonally skewed, and the vintage string still reads as authoritative.
+    missing_months = sorted(set(range(1, 13)) - months_present(rows, year))
+    if missing_months and not allow_partial:
+        raise ValueError(
+            f"Year {year} is incomplete - missing month(s) {missing_months}. "
+            "Annual weights from a partial year are seasonally skewed. Use a "
+            "complete year, or pass --allow-partial and record the limitation "
+            "in the weights vintage."
+        )
 
     for row in year_rows:
         orig_iata = city_to_iata(row["city1"])
@@ -230,11 +263,22 @@ def update_panel_yaml(
             return m.group(0)  # leave unchanged if not in our map
         return f"{{origin: {orig}, destination: {dest}, weight: {w:.8f}}}"
 
-    new_text = re.sub(
-        r"\{origin:\s*(\w+),\s*destination:\s*(\w+),\s*weight:\s*(?:null|\d[\d.e+-]*)\}",
+    new_text, n_subs = re.subn(
+        r"\{origin:\s*(\w+),\s*destination:\s*(\w+),\s*weight:\s*"
+        r"(?:null|-?\d[\d.e+-]*)\}",
         replace_weight,
         text,
     )
+    # This rewrite is regex-based so that comments survive, which means it only
+    # matches the inline-mapping form. Reformat panel.yaml to block style and it
+    # would match nothing, write nothing, and report success. Fail loudly instead.
+    if n_subs != len(weights):
+        raise RuntimeError(
+            f"panel.yaml rewrite matched {n_subs} route entries but {len(weights)} "
+            "weights were computed. The file's formatting no longer matches the "
+            "expected inline form `{origin: XXX, destination: YYY, weight: ...}`; "
+            "panel.yaml has NOT been modified."
+        )
 
     # Update weights_vintage line
     new_text = re.sub(
@@ -280,6 +324,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Override the DGCA CSV URL (e.g. a local file:// path for offline testing)",
     )
     parser.add_argument(
+        "--allow-partial", action="store_true",
+        help="Accept an incomplete calendar year (seasonally skewed; not for publication)",
+    )
+    parser.add_argument(
+        "--allow-proxy", action="store_true",
+        help="Write weights even when some routes fall back to proxy traffic",
+    )
+    parser.add_argument(
         "--dry-run", action="store_true",
         help="Print what would be written without touching panel.yaml",
     )
@@ -300,7 +352,7 @@ def main(argv: list[str] | None = None) -> int:
         year = available_years[0]
         print(f"WARNING: year {args.year} not found in dataset; using {year} instead.")
 
-    traffic = compute_route_traffic(rows, year)
+    traffic = compute_route_traffic(rows, year, allow_partial=args.allow_partial)
     print(f"Aggregated {len(traffic)} unique IATA O-D pairs for {year}.")
 
     # 3. Load panel
@@ -330,11 +382,23 @@ def main(argv: list[str] | None = None) -> int:
         print("\nAction required: add entries to CITY_TO_IATA in this script, or")
         print("document the proxy weight in the methodology.")
 
-    vintage = f"dgca-{year}-city-pairs"
+    vintage = f"dgca-{year}-city-pairs-{MAPPING_REVISION}"
+    if sorted(set(range(1, 13)) - months_present(rows, year)):
+        vintage += "-partial"
     print(f"\nWeight vintage : {vintage}")
     print(f"Sum of weights : {sum(weights.values()):.10f}  (should be 1.0)")
 
-    # 6. Write
+    # 6. Write - but never leave a partially-sourced vintage behind. A run that
+    #    exits non-zero must not have mutated the config it reports as unusable.
+    if n_missing and not args.allow_proxy:
+        print(
+            f"\nREFUSING to write: {n_missing} route(s) have no DGCA traffic and "
+            "would receive proxy weights. Add the missing cities to CITY_TO_IATA, "
+            "or pass --allow-proxy to accept documented proxies.",
+            file=sys.stderr,
+        )
+        return 1
+
     update_panel_yaml(PANEL_YAML, weights, vintage, dry_run=args.dry_run)
 
     if not args.dry_run:

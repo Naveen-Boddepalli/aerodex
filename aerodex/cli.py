@@ -33,8 +33,17 @@ def _cmd_panel(args) -> int:
     print(f"weights vintage  : {meth.weights_vintage}")
     unweighted = [k for k, v in panel.weights().items() if v is None]
     if unweighted:
-        print(f"\nWARNING: {len(unweighted)} routes have no weight (Phase 0 spike S4 pending).")
+        print(f"\nWARNING: {len(unweighted)} routes have no weight (spike S4 pending).")
         print("         The index will run with uniform weights and must not be published.")
+    else:
+        total = sum(float(v) for v in panel.weights().values())
+        print(f"weight coverage  : {len(panel.routes)}/{len(panel.routes)} (sum {total:.6f})")
+        if panel.raw.get("weights_vintage") != meth.weights_vintage:
+            print(
+                f"\nWARNING: weights_vintage mismatch — panel.yaml "
+                f"{panel.raw.get('weights_vintage')!r} vs methodology.yaml "
+                f"{meth.weights_vintage!r}."
+            )
     return 0
 
 
@@ -133,7 +142,34 @@ def _cmd_index(args) -> int:
         print("no panel data", file=sys.stderr)
         return 2
 
-    out = compute_index(panel_df, meth)
+    # Route weights from panel.yaml. Passing None here silently reverts the
+    # index to uniform weighting, which is what S4 existed to remove — so an
+    # incomplete weight set is refused rather than quietly downgraded.
+    panel_cfg = PanelConfig.load()
+    route_weights = panel_cfg.weights()
+    unweighted = sorted(k for k, v in route_weights.items() if v is None)
+    if unweighted and not args.allow_unweighted:
+        print(
+            f"{len(unweighted)} route(s) have no weight, e.g. {unweighted[:3]}.\n"
+            "Run scripts/parse_dgca_weights.py, or pass --allow-unweighted to "
+            "compute an explicitly uniform-weighted index (not publishable).",
+            file=sys.stderr,
+        )
+        return 2
+
+    weights = None if unweighted else {k: float(v) for k, v in route_weights.items()}
+    if weights is None:
+        print("WARNING: computing with UNIFORM weights — not publishable.", file=sys.stderr)
+    if panel_cfg.raw.get("weights_vintage") != meth.weights_vintage:
+        print(
+            f"WARNING: weights_vintage mismatch — panel.yaml says "
+            f"{panel_cfg.raw.get('weights_vintage')!r}, methodology.yaml says "
+            f"{meth.weights_vintage!r}. The published vintage will not identify "
+            "the weights actually used.",
+            file=sys.stderr,
+        )
+
+    out = compute_index(panel_df, meth, weights=weights)
     cols = ["period", "value", "index_ratio", "imputed_weight_share",
             "coverage_ratio", "n_quotes", "imputation_ceiling_breached"]
     print(out[cols].to_string(index=False))
@@ -162,11 +198,32 @@ def _cmd_verify(args) -> int:
     panel_df = pd.read_csv(args.panel_csv)
     meth = MethodologyConfig.load()
 
+    checks: list[tuple[str, str, str]] = []
+
     got = output_hash(compute_index(panel_df, meth))
-    ok = got == expected["output_hash"]
-    print(f"expected: {expected['output_hash']}")
-    print(f"actual  : {got}")
-    print("REPRODUCIBLE" if ok else "MISMATCH — a published number moved")
+    checks.append(("unweighted", expected["output_hash"], got))
+
+    # The weighted path is the one that gets published, so it is the one M6 is
+    # actually about. Verifying only the unweighted path would let the weights
+    # drift without the reproducibility check ever noticing.
+    route_weights = PanelConfig.load().weights()
+    if "weighted_output_hash" in expected and not any(v is None for v in route_weights.values()):
+        weights = {k: float(v) for k, v in route_weights.items()}
+        got_w = output_hash(compute_index(panel_df, meth, weights=weights))
+        checks.append(("weighted", expected["weighted_output_hash"], got_w))
+
+    ok = True
+    for label, want, actual in checks:
+        match = want == actual
+        ok = ok and match
+        print(f"{label:11} expected: {want}")
+        print(f"{'':11} actual  : {actual}   {'OK' if match else 'MISMATCH'}")
+
+    if "weights_vintage" in expected and expected["weights_vintage"] != meth.weights_vintage:
+        print(f"\nWARNING: weights_vintage moved {expected['weights_vintage']!r} "
+              f"-> {meth.weights_vintage!r} since the fixtures were frozen.")
+
+    print("\nREPRODUCIBLE" if ok else "\nMISMATCH — a published number moved")
     return 0 if ok else 1
 
 
@@ -189,6 +246,8 @@ def main(argv: list[str] | None = None) -> int:
     i = sub.add_parser("index", help="compute the index")
     i.add_argument("--panel-csv", help="read the panel from CSV instead of the database")
     i.add_argument("--out", help="write the index as JSON")
+    i.add_argument("--allow-unweighted", action="store_true",
+                   help="compute with uniform weights when panel weights are missing")
     i.set_defaults(fn=_cmd_index)
 
     v = sub.add_parser("verify", help="M6 reproducibility check")
