@@ -1,6 +1,6 @@
 {
-  "config_hash": "bf2d9fad7c2a9a105e11dfd5d9fb0cf7142d06c2f6af526d97d04c81efdd3b50",
-  "note": "Frozen by scripts/make_golden_panel.py + engine. A diff here means a published number moved.",
-  "output_hash": "253aba061caa27bd5fb07ff1c973ee80ac8b7679c75d50122540477b9ad2a1e5",
+  "config_hash": "e6f6bc563ad2ee9a520160aece8953cdb40537915dcfa4bafec7113ab04133af",
+  "note": "Frozen by scripts/make_golden_panel.py + engine. A diff here means a published number moved. Refrozen: Spike S4 weights_vintage dgca-2026-placeholder → dgca-2025-city-pairs.",
+  "output_hash": "4b2d373c5aa75618befb7f00d3a45ee32d25c6b6cdf25aba5114f754957ef1d3",
   "panel_hash": "ff74f12af5bb3207ae2f219f78a94b35becb000e7e268739854f703362f4c6f2"
 }

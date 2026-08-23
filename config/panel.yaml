@@ -2,7 +2,7 @@
 # 60 routes x 7 horizons x 3 slots => 1,260 stratum-slots/day nominal,
 # ~1,155 after overlap suppression (see collection.overlap_suppression).
 version: 1
-weights_vintage: "dgca-2026-placeholder"   # replaced by S4 output; see plan §5.8
+weights_vintage: "dgca-2025-city-pairs"   # replaced by S4 output; see plan §5.8
 
 cabins: [economy]
 
@@ -25,63 +25,63 @@ collection:
 # PLACEHOLDER VALUES: uniform pending DGCA parse (Phase 0 spike S4).
 # Do not publish an index off these — index_point records weights_vintage.
 routes:
-  - {origin: DEL, destination: BOM, weight: null}
-  - {origin: DEL, destination: BLR, weight: null}
-  - {origin: BOM, destination: BLR, weight: null}
-  - {origin: DEL, destination: CCU, weight: null}
-  - {origin: DEL, destination: HYD, weight: null}
-  - {origin: DEL, destination: MAA, weight: null}
-  - {origin: BOM, destination: DEL, weight: null}
-  - {origin: BLR, destination: DEL, weight: null}
-  - {origin: BOM, destination: HYD, weight: null}
-  - {origin: BOM, destination: MAA, weight: null}
-  - {origin: BLR, destination: BOM, weight: null}
-  - {origin: BLR, destination: HYD, weight: null}
-  - {origin: BLR, destination: MAA, weight: null}
-  - {origin: BLR, destination: CCU, weight: null}
-  - {origin: CCU, destination: DEL, weight: null}
-  - {origin: CCU, destination: BOM, weight: null}
-  - {origin: CCU, destination: BLR, weight: null}
-  - {origin: HYD, destination: DEL, weight: null}
-  - {origin: HYD, destination: BOM, weight: null}
-  - {origin: MAA, destination: DEL, weight: null}
-  - {origin: MAA, destination: BOM, weight: null}
-  - {origin: DEL, destination: AMD, weight: null}
-  - {origin: DEL, destination: PNQ, weight: null}
-  - {origin: DEL, destination: GOX, weight: null}
-  - {origin: DEL, destination: COK, weight: null}
-  - {origin: DEL, destination: JAI, weight: null}
-  - {origin: DEL, destination: LKO, weight: null}
-  - {origin: DEL, destination: IXC, weight: null}
-  - {origin: DEL, destination: PAT, weight: null}
-  - {origin: DEL, destination: GAU, weight: null}
-  - {origin: DEL, destination: BBI, weight: null}
-  - {origin: DEL, destination: VNS, weight: null}
-  - {origin: DEL, destination: SXR, weight: null}
-  - {origin: DEL, destination: ATQ, weight: null}
-  - {origin: DEL, destination: IDR, weight: null}
-  - {origin: DEL, destination: NAG, weight: null}
-  - {origin: DEL, destination: TRV, weight: null}
-  - {origin: DEL, destination: VTZ, weight: null}
-  - {origin: BOM, destination: AMD, weight: null}
-  - {origin: BOM, destination: GOX, weight: null}
-  - {origin: BOM, destination: COK, weight: null}
-  - {origin: BOM, destination: JAI, weight: null}
-  - {origin: BOM, destination: LKO, weight: null}
-  - {origin: BOM, destination: IDR, weight: null}
-  - {origin: BOM, destination: NAG, weight: null}
-  - {origin: BOM, destination: PAT, weight: null}
-  - {origin: BOM, destination: BBI, weight: null}
-  - {origin: BOM, destination: VNS, weight: null}
-  - {origin: BOM, destination: TRV, weight: null}
-  - {origin: BLR, destination: COK, weight: null}
-  - {origin: BLR, destination: AMD, weight: null}
-  - {origin: BLR, destination: PNQ, weight: null}
-  - {origin: BLR, destination: GOX, weight: null}
-  - {origin: BLR, destination: TRV, weight: null}
-  - {origin: BLR, destination: VTZ, weight: null}
-  - {origin: MAA, destination: HYD, weight: null}
-  - {origin: MAA, destination: COK, weight: null}
-  - {origin: MAA, destination: CCU, weight: null}
-  - {origin: HYD, destination: CCU, weight: null}
-  - {origin: HYD, destination: VTZ, weight: null}
+  - {origin: DEL, destination: BOM, weight: 0.06114123}
+  - {origin: DEL, destination: BLR, weight: 0.04466157}
+  - {origin: BOM, destination: BLR, weight: 0.03623666}
+  - {origin: DEL, destination: CCU, weight: 0.02632103}
+  - {origin: DEL, destination: HYD, weight: 0.02830338}
+  - {origin: DEL, destination: MAA, weight: 0.02206568}
+  - {origin: BOM, destination: DEL, weight: 0.06114123}
+  - {origin: BLR, destination: DEL, weight: 0.04466157}
+  - {origin: BOM, destination: HYD, weight: 0.02037355}
+  - {origin: BOM, destination: MAA, weight: 0.01912964}
+  - {origin: BLR, destination: BOM, weight: 0.03623666}
+  - {origin: BLR, destination: HYD, weight: 0.02206361}
+  - {origin: BLR, destination: MAA, weight: 0.01371417}
+  - {origin: BLR, destination: CCU, weight: 0.02025770}
+  - {origin: CCU, destination: DEL, weight: 0.02632103}
+  - {origin: CCU, destination: BOM, weight: 0.02098938}
+  - {origin: CCU, destination: BLR, weight: 0.02025770}
+  - {origin: HYD, destination: DEL, weight: 0.02830338}
+  - {origin: HYD, destination: BOM, weight: 0.02037355}
+  - {origin: MAA, destination: DEL, weight: 0.02206568}
+  - {origin: MAA, destination: BOM, weight: 0.01912964}
+  - {origin: DEL, destination: AMD, weight: 0.02254985}
+  - {origin: DEL, destination: PNQ, weight: 0.02578898}
+  - {origin: DEL, destination: GOX, weight: 0.01116912}
+  - {origin: DEL, destination: COK, weight: 0.00866967}
+  - {origin: DEL, destination: JAI, weight: 0.00522853}
+  - {origin: DEL, destination: LKO, weight: 0.01146730}
+  - {origin: DEL, destination: IXC, weight: 0.00827367}
+  - {origin: DEL, destination: PAT, weight: 0.01362057}
+  - {origin: DEL, destination: GAU, weight: 0.01402833}
+  - {origin: DEL, destination: BBI, weight: 0.01105994}
+  - {origin: DEL, destination: VNS, weight: 0.00925750}
+  - {origin: DEL, destination: SXR, weight: 0.01630156}
+  - {origin: DEL, destination: ATQ, weight: 0.01008339}
+  - {origin: DEL, destination: IDR, weight: 0.00988748}
+  - {origin: DEL, destination: NAG, weight: 0.00628607}
+  - {origin: DEL, destination: TRV, weight: 0.00419378}
+  - {origin: DEL, destination: VTZ, weight: 0.00446760}
+  - {origin: BOM, destination: AMD, weight: 0.01801631}
+  - {origin: BOM, destination: GOX, weight: 0.00779771}
+  - {origin: BOM, destination: COK, weight: 0.01075856}
+  - {origin: BOM, destination: JAI, weight: 0.00978635}
+  - {origin: BOM, destination: LKO, weight: 0.00844847}
+  - {origin: BOM, destination: IDR, weight: 0.00645466}
+  - {origin: BOM, destination: NAG, weight: 0.00683113}
+  - {origin: BOM, destination: PAT, weight: 0.00394042}
+  - {origin: BOM, destination: BBI, weight: 0.00519775}
+  - {origin: BOM, destination: VNS, weight: 0.00829918}
+  - {origin: BOM, destination: TRV, weight: 0.00322646}
+  - {origin: BLR, destination: COK, weight: 0.01249547}
+  - {origin: BLR, destination: AMD, weight: 0.01027010}
+  - {origin: BLR, destination: PNQ, weight: 0.01655456}
+  - {origin: BLR, destination: GOX, weight: 0.00478923}
+  - {origin: BLR, destination: TRV, weight: 0.00660243}
+  - {origin: BLR, destination: VTZ, weight: 0.00457050}
+  - {origin: MAA, destination: HYD, weight: 0.01434994}
+  - {origin: MAA, destination: COK, weight: 0.00705049}
+  - {origin: MAA, destination: CCU, weight: 0.00928356}
+  - {origin: HYD, destination: CCU, weight: 0.00978899}
+  - {origin: HYD, destination: VTZ, weight: 0.00940636}

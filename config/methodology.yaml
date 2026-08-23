@@ -39,7 +39,7 @@ aggregation:
   # current-period quantities this project does not have (plan §5.5).
   formula: lowe
   weight_source: dgca_traffic
-  weights_vintage: "dgca-2026-placeholder"
+  weights_vintage: "dgca-2025-city-pairs"
   # Route weights are renormalised over routes that actually reported.
   renormalise_on_missing: true
 
