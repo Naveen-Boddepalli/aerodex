@@ -1,0 +1,129 @@
+{
+  "spike": "S3",
+  "retrieved_at_utc": "2026-08-23T01:35:00Z",
+  "source": "ixigo",
+  "url": "https://www.ixigo.com/cheap-flights/new-delhi-mumbai-del-bom",
+  "method": "HTTPS GET, no auth, no cookies, robots.txt checked via aerodex.compliance",
+  "user_agent_used": "AeroDex/0.1.0 (+https://github.com/aerodex/aerodex; ...)",
+  "schema_org_flight_example": {
+    "@context": "https://schema.org",
+    "@type": "Flight",
+    "flightNumber": "IX1056",
+    "name": "Air-India Express IX1056 DEL to BOM",
+    "description": "Air-India Express flight IX1056 from New Delhi (DEL) to Mumbai (BOM)",
+    "estimatedFlightDuration": "PT1H40M",
+    "departureTime": "17:50 PM",
+    "arrivalTime": "19:30 PM",
+    "departureAirport": {
+      "@type": "Airport",
+      "name": "Delhi Indira Gandhi International Airport",
+      "iataCode": "DEL",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "New Delhi",
+        "addressCountry": "India"
+      }
+    },
+    "arrivalAirport": {
+      "@type": "Airport",
+      "name": "Mumbai Chhatrapati Shivaji International Airport",
+      "iataCode": "BOM",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Mumbai",
+        "addressCountry": "India"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "priceCurrency": "INR",
+      "price": "5929",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.ixigo.com/cheap-flights/new-delhi-mumbai-del-bom",
+      "seller": {
+        "@type": "Organization",
+        "name": "ixigo",
+        "sameAs": [
+          "https://x.com/ixigo",
+          "https://www.facebook.com/ixigo",
+          "https://www.linkedin.com/company/ixigo",
+          "https://www.instagram.com/ixigo/"
+        ],
+        "url": "https://www.ixigo.com",
+        "logo": "https://edge.ixigo.com/st/vimaan/_next/static/media/logo.44edf9f1.svg"
+      }
+    }
+  },
+  "fare_calendar_example": [
+    {
+      "date": "23082026",
+      "fare_inr": 6529,
+      "type": 0,
+      "airline_code": "IX",
+      "flight_number": "IX1605"
+    },
+    {
+      "date": "24082026",
+      "fare_inr": 6442,
+      "type": 1,
+      "airline_code": "6E",
+      "flight_number": "6E5096"
+    },
+    {
+      "date": "25082026",
+      "fare_inr": 6191,
+      "type": 0,
+      "airline_code": "IX",
+      "flight_number": null
+    },
+    {
+      "date": "26082026",
+      "fare_inr": 6302,
+      "type": 0,
+      "airline_code": "SG",
+      "flight_number": "SG9091"
+    },
+    {
+      "date": "27082026",
+      "fare_inr": 6408,
+      "type": 0,
+      "airline_code": "SG",
+      "flight_number": "SG476"
+    },
+    {
+      "date": "28082026",
+      "fare_inr": 6191,
+      "type": 0,
+      "airline_code": "IX",
+      "flight_number": null
+    },
+    {
+      "date": "29082026",
+      "fare_inr": 6191,
+      "type": 0,
+      "airline_code": "IX",
+      "flight_number": null
+    },
+    {
+      "date": "30082026",
+      "fare_inr": 6265,
+      "type": 0,
+      "airline_code": "IX",
+      "flight_number": "IX1605"
+    },
+    {
+      "date": "31082026",
+      "fare_inr": 6354,
+      "type": 0,
+      "airline_code": "SG",
+      "flight_number": "SG800"
+    },
+    {
+      "date": "01092026",
+      "fare_inr": 6179,
+      "type": 0,
+      "airline_code": "6E",
+      "flight_number": null
+    }
+  ]
+}

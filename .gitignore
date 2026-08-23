@@ -14,3 +14,4 @@ archive/
 dashboard/node_modules/
 dashboard/out/
 dashboard/.next/
+.DS_Store
