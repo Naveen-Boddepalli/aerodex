@@ -1,9 +1,58 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ── Tailwind v4 theme tokens ── */
+@theme {
+  /* Brand colors */
+  --color-aero-primary:  #2456E8;
+  --color-aero-primary2: #1A3FB5;
+  --color-aero-sky:      #38B6FF;
+  --color-aero-sky2:     #00D4FF;
+  --color-aero-bg:       #F0F4FF;
+  --color-aero-surface:  #FFFFFF;
+  --color-aero-dark:     #0D1B3E;
+  --color-aero-mid:      #3A4F7A;
+  --color-aero-muted:    #8A99BB;
+  --color-aero-border:   #DDE4F5;
+  --color-aero-drop:     #12B76A;
+  --color-aero-rise:     #F04438;
+  --color-aero-stable:   #6172A0;
+  --color-aero-badge:    #EBF1FF;
 
+  /* Font */
+  --font-family-sans: "Inter", system-ui, sans-serif;
+
+  /* Box shadows */
+  --shadow-aero-sm:  0 1px 4px rgba(36,86,232,0.08);
+  --shadow-aero-md:  0 4px 20px rgba(36,86,232,0.12);
+  --shadow-aero-lg:  0 8px 40px rgba(36,86,232,0.16);
+  --shadow-aero-glow:0 0 30px rgba(56,182,255,0.30);
+
+  /* Background images */
+  --background-image-aero-gradient: linear-gradient(135deg, #2456E8 0%, #38B6FF 100%);
+  --background-image-aero-dark:     linear-gradient(135deg, #0D1B3E 0%, #1A3FB5 100%);
+  --background-image-aero-card:     linear-gradient(180deg, #FFFFFF 0%, #F6F9FF 100%);
+
+  /* Animations */
+  --animate-fade-up:    fade-up 0.5s ease-out both;
+  --animate-pulse-dot:  pulse-dot 1.5s ease-in-out infinite;
+  --animate-counter-up: counter-up 0.6s ease-out both;
+
+  @keyframes fade-up {
+    0%   { opacity: 0; transform: translateY(16px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+  @keyframes counter-up {
+    0%   { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* ── CSS Variables for legacy usage ── */
 :root {
   --aero-primary:  #2456E8;
   --aero-sky:      #38B6FF;
@@ -38,33 +87,98 @@ body {
 ::-webkit-scrollbar-thumb  { background: #C5D0EE; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #2456E8; }
 
-/* ── Utilities ── */
-@layer utilities {
-  .aero-card {
-    @apply bg-white rounded-2xl shadow-aero-sm border border-aero-border;
-  }
-  .aero-label {
-    @apply text-[10px] font-semibold tracking-widest uppercase text-aero-primary;
-  }
-  .aero-badge-drop {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-semibold;
-  }
-  .aero-badge-rise {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-xs font-semibold;
-  }
-  .aero-badge-stable {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-aero-badge text-aero-mid text-xs font-semibold;
-  }
-  .aero-btn-primary {
-    @apply flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-aero-primary text-white font-semibold text-sm
-           hover:bg-aero-primary2 active:scale-95 transition-all duration-150 shadow-aero-md;
-  }
-  .aero-input {
-    @apply w-full bg-aero-bg border border-aero-border rounded-xl px-4 py-3 text-sm text-aero-dark
-           placeholder:text-aero-muted focus:outline-none focus:ring-2 focus:ring-aero-primary/30 focus:border-aero-primary
-           transition-all duration-150;
-  }
-  .live-dot {
-    @apply w-2 h-2 rounded-full bg-aero-drop animate-pulse-dot;
-  }
+/* ── Utility classes (plain CSS — no @apply needed) ── */
+.aero-card {
+  background-color: #fff;
+  border-radius: 1rem;
+  border: 1px solid #DDE4F5;
+  box-shadow: 0 1px 4px rgba(36,86,232,0.08);
+}
+
+.aero-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #2456E8;
+}
+
+.aero-badge-drop {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  background-color: #f0fdf4;
+  color: #15803d;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.aero-badge-rise {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  background-color: #fef2f2;
+  color: #dc2626;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.aero-badge-stable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  background-color: #EBF1FF;
+  color: #3A4F7A;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.aero-btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  background-color: #2456E8;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  box-shadow: 0 4px 20px rgba(36,86,232,0.12);
+  transition: background-color 150ms, transform 150ms;
+  cursor: pointer;
+  border: none;
+}
+.aero-btn-primary:hover  { background-color: #1A3FB5; }
+.aero-btn-primary:active { transform: scale(0.95); }
+
+.aero-input {
+  width: 100%;
+  background-color: #F0F4FF;
+  border: 1px solid #DDE4F5;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #0D1B3E;
+  transition: border-color 150ms, box-shadow 150ms;
+  outline: none;
+}
+.aero-input::placeholder { color: #8A99BB; }
+.aero-input:focus {
+  border-color: #2456E8;
+  box-shadow: 0 0 0 3px rgba(36,86,232,0.15);
+}
+
+.live-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: #12B76A;
+  animation: pulse-dot 1.5s ease-in-out infinite;
 }
