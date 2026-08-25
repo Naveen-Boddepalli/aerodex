@@ -1,19 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Search, Bell, ChevronDown, Menu, X } from "lucide-react";
 import clsx from "clsx";
 
 const navLinks = [
-  { label: "Dashboard",      href: "#" },
-  { label: "Price Tracking", href: "#" },
-  { label: "Alerts",         href: "#" },
-  { label: "History",        href: "#" },
+  { label: "Dashboard",      href: "/"               },
+  { label: "Price Tracking", href: "/price-tracking" },
+  { label: "Alerts",         href: "/alerts"         },
+  { label: "History",        href: "/history"        },
 ];
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [active, setActive] = useState("Dashboard");
+  const pathname = usePathname();
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-aero-border shadow-aero-sm">
@@ -21,7 +23,7 @@ export default function Navbar() {
         <div className="flex items-center h-16 gap-4">
 
           {/* ── Logo ── */}
-          <a href="#" className="flex items-center gap-2.5 shrink-0 group">
+          <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
             <div className="w-9 h-9 rounded-xl bg-aero-gradient flex items-center justify-center shadow-aero-md group-hover:shadow-aero-glow transition-shadow duration-300">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M21 3L3 10.5L10.5 13.5M21 3L13.5 21L10.5 13.5M21 3L10.5 13.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -30,7 +32,7 @@ export default function Navbar() {
             <span className="text-xl font-bold text-aero-dark tracking-tight">
               Aero<span className="text-aero-primary">dex</span>
             </span>
-          </a>
+          </Link>
 
           {/* ── Search bar ── */}
           <div className="flex-1 max-w-md mx-4 hidden sm:flex">
@@ -47,19 +49,18 @@ export default function Navbar() {
           {/* ── Desktop Nav Links ── */}
           <div className="hidden md:flex items-center gap-1 ml-auto">
             {navLinks.map(({ label, href }) => (
-              <a
+              <Link
                 key={label}
                 href={href}
-                onClick={() => setActive(label)}
                 className={clsx(
                   "flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150",
-                  active === label
+                  pathname === href
                     ? "text-aero-primary bg-aero-badge"
                     : "text-aero-mid hover:text-aero-dark hover:bg-aero-bg"
                 )}
               >
                 {label}
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -94,19 +95,19 @@ export default function Navbar() {
           <div className="md:hidden pb-4 pt-2 border-t border-aero-border animate-fade-up">
             <div className="flex flex-col gap-1">
               {navLinks.map(({ label, href }) => (
-                <a
+                <Link
                   key={label}
                   href={href}
-                  onClick={() => { setActive(label); setMenuOpen(false); }}
+                  onClick={() => setMenuOpen(false)}
                   className={clsx(
                     "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
-                    active === label
+                    pathname === href
                       ? "text-aero-primary bg-aero-badge"
                       : "text-aero-mid hover:text-aero-dark hover:bg-aero-bg"
                   )}
                 >
                   {label}
-                </a>
+                </Link>
               ))}
             </div>
           </div>
