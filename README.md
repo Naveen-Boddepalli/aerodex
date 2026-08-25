@@ -1,3 +1,9 @@
+---
+updated: 2026-08-25T05:51:17.086Z
+editedBy: praneeth132006
+generator: https://forkleaf.vercel.app
+---
+
 # AeroDex
 
 Real-time airfare price index for India — SIH 2026, PS SIH26056 (MoSPI).
@@ -13,10 +19,10 @@ The pipeline runs end to end — scheduler → adapter → normalise → validat
 store → index → JSON artifact — on a **fixture adapter**, not real fares.
 
 | Phase 0 spike | Status |
-|---|---|
+| --- | --- |
 | S1 — Oracle A1 capacity in an Indian region | **not started** (needs an Oracle account) |
 | S2 — Playwright/Chromium on Ubuntu 24.04 arm64 | **not started** (needs the VM from S1) |
-| S3 — tier-1/tier-2 endpoints across ~6 candidate sources | **not started** — gates every real adapter |
+| S3 — tier-1/tier-2 endpoints across \~6 candidate sources | **not started** — gates every real adapter |
 | S4 — DGCA weights parse into the 60-route panel | **not started** — weights are `null` placeholders |
 
 Until S3 and S4 run, `aerodex` computes a **structurally correct but
@@ -54,7 +60,7 @@ uv run python -m aerodex.cli index
 ## Commands
 
 | Command | What it does |
-|---|---|
+| --- | --- |
 | `aerodex panel` | Panel shape, sizing arithmetic, config hashes |
 | `aerodex init-db` | Apply the schema (idempotent) |
 | `aerodex collect` | Run one slot: `--slot`, `--date`, `--limit`, `--store` |
@@ -79,7 +85,7 @@ tests/golden/    the M6 guarantee — frozen panel, frozen expected index
 
 ## The two invariants
 
-**`quote_raw` is append-only.** Enforced by database triggers on UPDATE,
+`quote_raw` **is append-only.** Enforced by database triggers on UPDATE,
 DELETE *and* TRUNCATE — not by code review. M6 depends on it.
 
 **The index engine is a pure function.** `compute_index(panel, config)` reads
@@ -112,4 +118,4 @@ deliberately editing a file called `compliance.py`.
 ## Attribution
 
 Route weights derive from DGCA traffic data via
-[`Vonter/india-aviation-traffic`](https://github.com/Vonter/india-aviation-traffic) (ODbL).
+`Vonter/india-aviation-traffic` (ODbL).
