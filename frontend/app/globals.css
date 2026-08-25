@@ -1,0 +1,70 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --aero-primary:  #2456E8;
+  --aero-sky:      #38B6FF;
+  --aero-bg:       #F0F4FF;
+  --aero-dark:     #0D1B3E;
+  --aero-mid:      #3A4F7A;
+  --aero-muted:    #8A99BB;
+  --aero-border:   #DDE4F5;
+  --aero-drop:     #12B76A;
+  --aero-rise:     #F04438;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Inter", system-ui, sans-serif;
+  background-color: var(--aero-bg);
+  color: var(--aero-dark);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: #F0F4FF; }
+::-webkit-scrollbar-thumb  { background: #C5D0EE; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #2456E8; }
+
+/* ── Utilities ── */
+@layer utilities {
+  .aero-card {
+    @apply bg-white rounded-2xl shadow-aero-sm border border-aero-border;
+  }
+  .aero-label {
+    @apply text-[10px] font-semibold tracking-widest uppercase text-aero-primary;
+  }
+  .aero-badge-drop {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-semibold;
+  }
+  .aero-badge-rise {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-xs font-semibold;
+  }
+  .aero-badge-stable {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-aero-badge text-aero-mid text-xs font-semibold;
+  }
+  .aero-btn-primary {
+    @apply flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-aero-primary text-white font-semibold text-sm
+           hover:bg-aero-primary2 active:scale-95 transition-all duration-150 shadow-aero-md;
+  }
+  .aero-input {
+    @apply w-full bg-aero-bg border border-aero-border rounded-xl px-4 py-3 text-sm text-aero-dark
+           placeholder:text-aero-muted focus:outline-none focus:ring-2 focus:ring-aero-primary/30 focus:border-aero-primary
+           transition-all duration-150;
+  }
+  .live-dot {
+    @apply w-2 h-2 rounded-full bg-aero-drop animate-pulse-dot;
+  }
+}
