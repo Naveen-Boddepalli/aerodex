@@ -1,0 +1,759 @@
+<title>AeroDex Idea Submission</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap">
+
+<style>
+/* ============ chrome tokens (respond to viewer theme) ============ */
+:root{
+  --page-bg:#E4E9EF;
+  --chrome-surface:#FFFFFF;
+  --chrome-ink:#2C3742;
+  --chrome-dim:#5F6D7C;
+  --chrome-line:#CBD4DD;
+  --chrome-accent:#1B3A6B;
+  --chrome-shadow:0 1px 2px rgba(12,20,30,.07), 0 20px 48px -28px rgba(12,20,30,.45);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page-bg:#070C13;
+    --chrome-surface:#101821;
+    --chrome-ink:#DCE3EA;
+    --chrome-dim:#8A99A9;
+    --chrome-line:#1F2B37;
+    --chrome-accent:#8FB2E4;
+    --chrome-shadow:0 1px 2px rgba(0,0,0,.5), 0 20px 48px -28px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --page-bg:#070C13;
+  --chrome-surface:#101821;
+  --chrome-ink:#DCE3EA;
+  --chrome-dim:#8A99A9;
+  --chrome-line:#1F2B37;
+  --chrome-accent:#8FB2E4;
+  --chrome-shadow:0 1px 2px rgba(0,0,0,.5), 0 20px 48px -28px rgba(0,0,0,.9);
+}
+
+/* ============ slide-internal palette (fixed: a deck keeps its own light and dark slides) ============ */
+:root{
+  --d-bg:#0E1A2B; --d-card:#16263D; --d-line:#26384F;
+  --d-ink:#FFFFFF; --d-mid:#A9BBD3; --d-dim:#7E93AE; --d-zebra:#13223A;
+  --l-bg:#FFFFFF; --l-surf:#F3F5F8; --l-line:#D8DEE5;
+  --l-ink:#10161D; --l-mid:#4C5764; --l-dim:#6B7684;
+  --navy:#1B3A6B; --navy-l:#2F5C9E; --pale:#E4EAF4;
+  --amber:#9A5A12; --amber-p:#F7EEDC;
+  --green:#1F6A4A; --green-p:#E1EFE8;
+  --s-red:#E08B7C; --s-orange:#D99A4A; --s-green:#6FC49B; --s-yellow:#E8C35C;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--page-bg); color:var(--chrome-ink);
+  font-family:"Archivo","Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ============ app shell ============ */
+.app{
+  min-height:100vh; display:flex; flex-direction:column;
+  --reserve:118px;
+}
+.app.with-notes{--reserve:306px}
+.bar{
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:10px clamp(12px,2.4vw,26px);
+  border-bottom:1px solid var(--chrome-line); background:var(--chrome-surface);
+  position:sticky; top:0; z-index:20;
+}
+.brand{font-weight:700; font-size:14px; letter-spacing:-.01em; color:var(--chrome-ink)}
+.brand span{font-weight:400; color:var(--chrome-dim)}
+.bar-spacer{flex:1 1 auto}
+.btn{
+  font:600 12px/1 "Archivo",sans-serif; letter-spacing:.02em;
+  padding:7px 11px; border-radius:5px; cursor:pointer;
+  background:transparent; color:var(--chrome-ink);
+  border:1px solid var(--chrome-line);
+}
+.btn:hover{border-color:var(--chrome-accent); color:var(--chrome-accent)}
+.btn[aria-pressed="true"]{background:var(--chrome-accent); border-color:var(--chrome-accent); color:var(--chrome-surface)}
+.btn:focus-visible, .dot:focus-visible{outline:2px solid var(--chrome-accent); outline-offset:2px}
+.counter{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px;
+  color:var(--chrome-dim); font-variant-numeric:tabular-nums;
+}
+.dots{display:flex; gap:6px}
+.dot{
+  width:22px; height:6px; border-radius:3px; padding:0; cursor:pointer;
+  border:none; background:var(--chrome-line);
+}
+.dot[aria-current="true"]{background:var(--chrome-accent)}
+
+.viewport{
+  flex:1 1 auto; display:flex; align-items:center; justify-content:center;
+  padding:clamp(10px,2vw,26px);
+}
+.deck{
+  width:100%; margin:0 auto;
+  max-width:1360px;
+  max-width:min(1360px, calc((100vh - var(--reserve)) * 16 / 9));
+  max-width:min(1360px, calc((100dvh - var(--reserve)) * 16 / 9));
+}
+
+/* ============ the slide stage ============ */
+.slide{
+  container-type:inline-size;
+  --pt:calc(100cqw / 960);         /* 13.333in = 960pt, so 1pt of the PPTX == var(--pt) */
+  aspect-ratio:16 / 9;
+  width:100%;
+  border-radius:8px; overflow:hidden;
+  box-shadow:var(--chrome-shadow);
+  padding:calc(40 * var(--pt)) calc(44.6 * var(--pt));
+  display:flex; flex-direction:column;
+  font-family:"Archivo",sans-serif;
+}
+.slide.dark{background:var(--d-bg); color:var(--d-ink)}
+.slide.light{background:var(--l-bg); color:var(--l-ink)}
+.deck.deck-mode .slide{display:none}
+.deck.deck-mode .slide.on{display:flex}
+
+/* ============ typography inside a slide ============ */
+.slide h1,.slide h2,.slide h3{margin:0; font-family:"Source Serif 4",Georgia,serif; text-wrap:balance}
+.slide p{margin:0}
+.eyebrow{
+  font-size:calc(10.5 * var(--pt)); font-weight:700; letter-spacing:.13em;
+}
+.hd{display:flex; align-items:center; gap:calc(14 * var(--pt)); margin-bottom:calc(22 * var(--pt))}
+.hd .num{
+  width:calc(32 * var(--pt)); height:calc(32 * var(--pt)); border-radius:calc(4 * var(--pt));
+  display:grid; place-items:center; flex:0 0 auto;
+  font-size:calc(14 * var(--pt)); font-weight:700; color:#fff;
+}
+.light .hd .num{background:var(--navy)}
+.dark  .hd .num{background:var(--navy-l)}
+.hd h2{font-size:calc(31 * var(--pt)); font-weight:700; letter-spacing:-.012em; line-height:1.05}
+.hd .kick{
+  margin-left:auto; text-align:right; font-size:calc(9.5 * var(--pt)); letter-spacing:.02em;
+}
+.light .hd .kick{color:var(--l-dim)}
+.dark  .hd .kick{color:var(--d-dim)}
+
+.chip{
+  display:inline-block; border-radius:999px;
+  padding:calc(3.4 * var(--pt)) calc(9 * var(--pt));
+  font-size:calc(8 * var(--pt)); font-weight:700; letter-spacing:.11em; line-height:1;
+}
+.chip.green{background:var(--green-p); color:var(--green)}
+.chip.navy {background:var(--pale);   color:var(--navy)}
+.chip.amber{background:var(--amber-p);color:var(--amber)}
+.chip.ondark{background:var(--navy); color:#CFDCEE}
+.chip.finding{background:#3A2A12; color:var(--s-orange)}
+
+.card{border-radius:calc(4.5 * var(--pt)); padding:calc(16 * var(--pt)) calc(17 * var(--pt))}
+.light .card{background:var(--l-surf); border:1px solid var(--l-line)}
+.light .card.plain{background:var(--l-bg)}
+.dark  .card{background:var(--d-card); border:1px solid var(--d-line)}
+.label{
+  font-size:calc(9.5 * var(--pt)); font-weight:700; letter-spacing:.12em;
+  margin-bottom:calc(9 * var(--pt));
+}
+.light .label{color:var(--navy)}
+.dark  .label{color:var(--s-orange)}
+.prose{
+  font-family:"Source Serif 4",Georgia,serif;
+  font-size:calc(11.5 * var(--pt)); line-height:1.46;
+}
+.light .prose{color:var(--l-mid)}
+.dark  .prose{color:var(--d-mid)}
+.prose.sm{font-size:calc(9.6 * var(--pt)); line-height:1.44}
+.prose.xs{font-size:calc(8.8 * var(--pt)); line-height:1.42}
+.ch{font-size:calc(12.5 * var(--pt)); font-weight:700; line-height:1.16; font-family:"Source Serif 4",Georgia,serif}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+
+/* ============ slide 1 ============ */
+.s1{justify-content:space-between}
+.s1 .eyebrow{color:var(--d-dim)}
+.s1 h1{
+  font-size:calc(68 * var(--pt)); font-weight:700; letter-spacing:-.028em;
+  line-height:1; margin:calc(20 * var(--pt)) 0 calc(16 * var(--pt));
+}
+.s1 .sub{
+  font-family:"Source Serif 4",Georgia,serif; color:var(--d-mid);
+  font-size:calc(19 * var(--pt)); line-height:1.42; max-width:calc(700 * var(--pt));
+}
+.statrow{display:grid; grid-template-columns:repeat(4,1fr); gap:calc(16 * var(--pt))}
+.stat{
+  background:var(--d-card); border:1px solid var(--d-line);
+  border-radius:calc(4.5 * var(--pt)); padding:calc(12 * var(--pt)) calc(14 * var(--pt));
+}
+.stat b{
+  display:block; font-family:"Source Serif 4",Georgia,serif;
+  font-size:calc(32 * var(--pt)); font-weight:700; line-height:1.05; color:var(--d-ink);
+  font-variant-numeric:tabular-nums;
+}
+.stat span{
+  display:block; margin-top:calc(6 * var(--pt));
+  font-size:calc(9 * var(--pt)); line-height:1.32; color:var(--d-dim);
+}
+.grid420{
+  display:grid; grid-template-columns:repeat(60,1fr);
+  gap:calc(3.4 * var(--pt)) calc(6 * var(--pt));
+}
+.grid420 i{
+  display:block; width:calc(5.9 * var(--pt)); height:calc(5.9 * var(--pt));
+  border-radius:calc(.8 * var(--pt));
+}
+.capline{
+  margin-top:calc(11 * var(--pt)); font-size:calc(9.5 * var(--pt));
+  letter-spacing:.02em; color:var(--d-dim);
+}
+.s1 footer{
+  display:flex; justify-content:space-between; align-items:baseline;
+  font-size:calc(10 * var(--pt));
+}
+.s1 footer b{color:var(--d-mid)}
+.s1 footer .mono{color:var(--d-dim); font-size:calc(9.5 * var(--pt))}
+
+/* ============ slide 2 ============ */
+.two{display:grid; grid-template-columns:1fr 1fr; gap:calc(19 * var(--pt))}
+.four{display:grid; grid-template-columns:repeat(4,1fr); gap:calc(16 * var(--pt))}
+.body{flex:1 1 auto; display:flex; flex-direction:column; gap:calc(17 * var(--pt))}
+.diff .ch{margin:calc(11 * var(--pt)) 0 calc(9 * var(--pt))}
+.finding{
+  background:var(--d-bg); border-radius:calc(4.5 * var(--pt));
+  padding:calc(17 * var(--pt)) calc(20 * var(--pt));
+  display:grid; grid-template-columns:calc(230 * var(--pt)) 1fr; gap:calc(22 * var(--pt));
+}
+.finding h3{
+  font-size:calc(15 * var(--pt)); font-weight:700; color:#fff;
+  line-height:1.2; margin-top:calc(9 * var(--pt));
+}
+.finding .prose{color:var(--d-mid); font-size:calc(11 * var(--pt))}
+
+/* ============ slide 3 ============ */
+.pipe{display:grid; grid-template-columns:repeat(7,1fr); gap:calc(12 * var(--pt))}
+.stage-box{
+  border-radius:calc(4.5 * var(--pt)); padding:calc(11 * var(--pt)) calc(6 * var(--pt));
+  text-align:center; position:relative;
+}
+.stage-box b{display:block; font-size:calc(11.5 * var(--pt)); font-weight:700}
+.stage-box span{display:block; margin-top:calc(7 * var(--pt)); font-size:calc(8 * var(--pt)); line-height:1.32}
+.stage-box.done {background:var(--green-p); border:1px solid var(--l-line)}
+.stage-box.done b{color:var(--green)} .stage-box.done span{color:#3D6E58}
+.stage-box.part {background:var(--amber-p); border:1px solid var(--l-line)}
+.stage-box.part b{color:var(--amber)} .stage-box.part span{color:#7C4E10}
+.stage-box.guard{background:var(--navy)}
+.stage-box.guard b{color:#fff} .stage-box.guard span{color:var(--d-mid)}
+.stage-box:not(:last-child)::after{
+  content:""; position:absolute; top:50%; right:calc(-9 * var(--pt));
+  width:0; height:0; transform:translateY(-50%);
+  border-left:calc(5 * var(--pt)) solid #9AA5B1;
+  border-top:calc(4 * var(--pt)) solid transparent;
+  border-bottom:calc(4 * var(--pt)) solid transparent;
+}
+.note{font-size:calc(9.5 * var(--pt)); font-style:italic; color:var(--l-dim); line-height:1.4;
+  font-family:"Source Serif 4",Georgia,serif}
+.split{display:grid; grid-template-columns:1.45fr 1fr; gap:calc(20 * var(--pt)); flex:1 1 auto}
+.layers{display:flex; flex-direction:column; gap:calc(10 * var(--pt))}
+.layer{display:grid; grid-template-columns:calc(92 * var(--pt)) 1fr; gap:calc(10 * var(--pt))}
+.layer > b{font-size:calc(9.5 * var(--pt)); font-weight:700; color:var(--l-ink)}
+.layer p{font-size:calc(9.5 * var(--pt)); line-height:1.34; color:var(--l-dim)}
+.layer p b{color:var(--l-ink)}
+.ticks{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:calc(8 * var(--pt))}
+.ticks li{
+  position:relative; padding-left:calc(13 * var(--pt));
+  font-size:calc(9.7 * var(--pt)); line-height:1.36; color:var(--l-mid);
+}
+.ticks li::before{
+  content:""; position:absolute; left:0; top:calc(5 * var(--pt));
+  width:calc(4 * var(--pt)); height:calc(4 * var(--pt)); border-radius:50%; background:var(--navy-l);
+}
+.term{
+  margin-top:auto; background:var(--d-bg); border-radius:calc(4 * var(--pt));
+  padding:calc(11 * var(--pt)) calc(13 * var(--pt));
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:calc(8.6 * var(--pt)); line-height:1.62; white-space:pre; overflow-x:auto;
+  color:var(--d-mid);
+}
+.term .g{color:var(--s-green)}
+.term .b{color:var(--s-green); font-weight:600}
+
+/* ============ slide 4 ============ */
+.tablewrap{overflow-x:auto}
+.matrix{width:100%; border-collapse:collapse; font-size:calc(9.5 * var(--pt))}
+.matrix th{
+  text-align:left; font-size:calc(8 * var(--pt)); font-weight:700; letter-spacing:.11em;
+  color:var(--d-dim); padding:calc(4 * var(--pt)) calc(6 * var(--pt)) calc(8 * var(--pt));
+}
+.matrix td{padding:calc(7 * var(--pt)) calc(6 * var(--pt)); color:var(--d-mid); vertical-align:middle}
+.matrix tbody tr:nth-child(odd){background:var(--d-zebra)}
+.matrix td:first-child{color:var(--d-ink); border-radius:calc(3 * var(--pt)) 0 0 calc(3 * var(--pt))}
+.matrix td:last-child{font-weight:600; border-radius:0 calc(3 * var(--pt)) calc(3 * var(--pt)) 0}
+.v-red td:last-child{color:var(--s-red)}
+.v-orange td:last-child{color:var(--s-orange)}
+.v-green td:last-child{color:var(--s-green)}
+.v-yellow td:last-child{color:var(--s-yellow)}
+.three{display:grid; grid-template-columns:repeat(3,1fr); gap:calc(17 * var(--pt))}
+.three .ch{color:#fff; margin:calc(10 * var(--pt)) 0 calc(8 * var(--pt))}
+.strip{
+  border-radius:calc(4.5 * var(--pt)); padding:calc(13 * var(--pt)) calc(18 * var(--pt));
+  font-size:calc(10 * var(--pt)); line-height:1.42;
+  font-family:"Source Serif 4",Georgia,serif;
+}
+.strip.navy{background:var(--navy); color:#CFDCEE}
+.strip.navy b{color:#fff; font-family:"Archivo",sans-serif; font-weight:700; letter-spacing:.07em; font-size:calc(9.4 * var(--pt))}
+.strip.pale{background:var(--pale); color:var(--l-mid)}
+.strip.pale b{color:var(--navy); font-family:"Archivo",sans-serif; font-weight:700; letter-spacing:.07em; font-size:calc(9.4 * var(--pt))}
+
+/* ============ slide 5 ============ */
+.quad{display:grid; grid-template-columns:1fr 1fr; gap:calc(17 * var(--pt)); flex:1 1 auto}
+.quad h3{font-size:calc(16 * var(--pt)); font-weight:700; margin:calc(12 * var(--pt)) 0 calc(10 * var(--pt))}
+
+/* ============ slide 6 ============ */
+.refsplit{display:grid; grid-template-columns:.72fr 1fr; gap:calc(19 * var(--pt)); flex:1 1 auto}
+.record{display:flex; flex-direction:column; gap:calc(13 * var(--pt)); margin-top:calc(4 * var(--pt))}
+.rec{display:grid; grid-template-columns:calc(62 * var(--pt)) 1fr; gap:calc(10 * var(--pt)); align-items:baseline}
+.rec b{
+  font-family:"Source Serif 4",Georgia,serif; font-size:calc(21 * var(--pt)); font-weight:700;
+  color:var(--d-ink); font-variant-numeric:tabular-nums;
+}
+.rec span{font-size:calc(9 * var(--pt)); line-height:1.36; color:var(--d-mid)}
+.refgroup + .refgroup{margin-top:calc(13 * var(--pt))}
+.refgroup ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:calc(4 * var(--pt))}
+.refgroup li{
+  position:relative; padding-left:calc(11 * var(--pt));
+  font-size:calc(8.6 * var(--pt)); line-height:1.38; color:var(--d-mid);
+}
+.refgroup li::before{
+  content:""; position:absolute; left:0; top:calc(4.5 * var(--pt));
+  width:calc(3.2 * var(--pt)); height:calc(3.2 * var(--pt)); border-radius:50%; background:var(--d-dim);
+}
+.s6foot{
+  margin-top:calc(12 * var(--pt)); font-size:calc(9 * var(--pt)); color:var(--d-dim);
+  display:flex; justify-content:space-between; gap:calc(16 * var(--pt)); flex-wrap:wrap;
+}
+
+/* ============ speaker notes ============ */
+.notes{
+  max-width:1360px; margin:0 auto; padding:0 clamp(12px,2vw,26px) 26px;
+}
+.notes[hidden]{display:none}
+.notecard{
+  background:var(--chrome-surface); border:1px solid var(--chrome-line);
+  border-radius:8px; padding:15px 18px; margin-top:14px;
+  max-height:186px; overflow-y:auto;
+}
+.notecard h4{
+  margin:0 0 8px; font-size:11px; font-weight:700; letter-spacing:.12em;
+  color:var(--chrome-accent);
+}
+.notecard p{
+  margin:0; font-family:"Source Serif 4",Georgia,serif;
+  font-size:14.5px; line-height:1.6; color:var(--chrome-ink); max-width:78ch;
+}
+
+/* ============ document mode: phones and short windows ============ */
+@media (max-width:820px){
+  .deck{max-width:none}
+  .app.with-notes{--reserve:118px}
+  .deck.deck-mode .slide{display:flex}
+  .slide{
+    --pt:1.3px;
+    aspect-ratio:auto; border-radius:6px;
+    padding:22px 18px; margin-bottom:16px; gap:14px;
+  }
+  .two,.four,.three,.quad,.split,.refsplit,.pipe,.statrow{grid-template-columns:1fr}
+  .finding{grid-template-columns:1fr; gap:calc(10 * var(--pt))}
+  .stage-box:not(:last-child)::after{display:none}
+  .grid420{grid-template-columns:repeat(30,1fr); grid-template-rows:repeat(14,1fr); height:60px}
+  .dots{display:none}
+  .matrix{font-size:calc(11 * var(--pt)); min-width:calc(560 * var(--pt))}
+  .s1 h1{font-size:calc(46 * var(--pt))}
+  .s1 .sub{font-size:calc(15 * var(--pt))}
+  .hd h2{font-size:calc(24 * var(--pt))}
+  .hd .kick{display:none}
+  .finding{grid-template-columns:1fr}
+  .prose{font-size:calc(12 * var(--pt))}
+  .prose.sm{font-size:calc(11.5 * var(--pt))}
+  .prose.xs{font-size:calc(11 * var(--pt))}
+  .refgroup li,.stat span,.rec span,.layer p,.layer > b,.ticks li{font-size:calc(11 * var(--pt))}
+  .term{white-space:pre-wrap}
+  .rec b{font-size:calc(24 * var(--pt))}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important}}
+</style>
+
+<div class="app">
+  <div class="bar">
+    <div class="brand">AeroDex <span>· SIH 2026 idea submission · PS SIH26056 · MoSPI</span></div>
+    <div class="bar-spacer"></div>
+    <div class="dots" id="dots" role="tablist" aria-label="Slides"></div>
+    <span class="counter" id="counter">1 / 6</span>
+    <button class="btn" id="prev" type="button">← Prev</button>
+    <button class="btn" id="next" type="button">Next →</button>
+    <button class="btn" id="notesBtn" type="button" aria-pressed="false">Speaker notes</button>
+  </div>
+
+  <div class="viewport">
+    <div class="deck deck-mode" id="deck">
+
+      <!-- ============================ 1 ============================ -->
+      <section class="slide dark s1 on" aria-label="Title">
+        <p class="eyebrow">SMART INDIA HACKATHON 2026 &nbsp;·&nbsp; PROBLEM STATEMENT SIH26056 &nbsp;·&nbsp; MINISTRY OF STATISTICS AND PROGRAMME IMPLEMENTATION</p>
+        <div>
+          <h1>AeroDex</h1>
+          <p class="sub">A real-time airfare price index for India, built to the standard of an official statistic — reproducible by construction, compliant by design, and ₹0 to run forever.</p>
+        </div>
+        <div class="statrow">
+          <div class="stat"><b>148</b><span>tests passing across engine, compliance and reproducibility</span></div>
+          <div class="stat"><b>60</b><span>routes in the panel, each weighted by DGCA passenger traffic</span></div>
+          <div class="stat"><b>100%</b><span>bit-identical index re-runs, asserted by 11 golden tests</span></div>
+          <div class="stat"><b>₹0</b><span>recurring cost — permanent free tiers only, no trials</span></div>
+        </div>
+        <div>
+          <div class="grid420" id="grid420" aria-hidden="true"></div>
+          <p class="capline">420 strata — 60 routes × 7 booking horizons (T-1 to T-60), observed at three fixed IST slots every day</p>
+        </div>
+        <footer>
+          <b>Team AeroDex</b>
+          <span class="mono">github.com/Naveen-Boddepalli/aerodex</span>
+        </footer>
+      </section>
+
+      <!-- ============================ 2 ============================ -->
+      <section class="slide light" aria-label="Proposed Solution">
+        <div class="hd">
+          <div class="num">01</div>
+          <h2>Proposed Solution</h2>
+          <div class="kick">AeroDex &nbsp;·&nbsp; PS SIH26056 &nbsp;·&nbsp; MoSPI</div>
+        </div>
+        <div class="body">
+          <div class="two">
+            <div class="card">
+              <div class="label">THE MEASUREMENT GAP</div>
+              <p class="prose">CPI carries one airfare figure a month. Airline pricing moves several times a day, and moves differently by route, by carrier and by how far ahead a seat is booked. Neither the size nor the shape of that movement is measured anywhere today.</p>
+            </div>
+            <div class="card">
+              <div class="label">THE INSTRUMENT WE PROPOSE</div>
+              <p class="prose">A 60-route panel weighted by DGCA passenger traffic, observed at 7 booking horizons across 3 fixed IST slots — 420 strata, roughly 1,155 stratum-slots a day. Jevons elementary index, hedonic quality adjustment, Lowe aggregation, chain-linked and seasonally adjusted.</p>
+            </div>
+          </div>
+
+          <div class="four">
+            <div class="card plain diff">
+              <span class="chip green">PROVEN</span>
+              <h3 class="ch">Reproducibility is a property, not a promise</h3>
+              <p class="prose sm"><span class="mono">compute_index()</span> is a pure function — no clock, no database, no network. A test parses the module's own source to prove it. Frozen panel in, frozen hash out.</p>
+            </div>
+            <div class="card plain diff">
+              <span class="chip navy">ENFORCED</span>
+              <h3 class="ch">Compliance is executable code</h3>
+              <p class="prose sm">No authentication, no CAPTCHA, no personal data, a 20-second floor per host, robots.txt honoured at run time. We wrote our own RFC 9309 parser after finding four defects in Python's.</p>
+            </div>
+            <div class="card plain diff">
+              <span class="chip amber">PUBLISHED</span>
+              <h3 class="ch">It discloses its own limits</h3>
+              <p class="prose sm">Every index point carries its coverage ratio, imputed weight share and config hash. The publisher refuses to release a run it cannot stand behind — refusal is code, not convention.</p>
+            </div>
+            <div class="card plain diff">
+              <span class="chip navy">ZERO COST</span>
+              <h3 class="ch">Costed to be handed over</h3>
+              <p class="prose sm">Permanent free tiers only: no trials, no credits, no vendor lock-in. The system transfers to a ministry with no invoice attached and no licence conversation.</p>
+            </div>
+          </div>
+
+          <div class="finding">
+            <div>
+              <span class="chip finding">CORE FINDING</span>
+              <h3>The finding that shapes this solution</h3>
+            </div>
+            <p class="prose">Four research passes over 40+ candidate sources, each source resolved on nine independent axes, produced one structural result: every source that carries a booking horizon prohibits automated collection, and every source that permits automated collection carries no booking horizon. That is look-to-book economics, not coincidence — distribution meters search and recovers the cost from bookings, and an index books nothing. So the blocker is statutory authority, and the sponsor of this problem statement already holds it.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ 3 ============================ -->
+      <section class="slide light" aria-label="Technical Approach">
+        <div class="hd">
+          <div class="num">02</div>
+          <h2>Technical Approach</h2>
+          <div class="kick">Python 3.12 &nbsp;·&nbsp; PostgreSQL + TimescaleDB &nbsp;·&nbsp; Oracle A1 &nbsp;·&nbsp; Cloudflare</div>
+        </div>
+        <div class="body">
+          <div class="pipe">
+            <div class="stage-box done"><b>Scheduler</b><span>systemd timers,<br>±15 min window</span></div>
+            <div class="stage-box part"><b>Adapter</b><span>three-tier ladder;<br>fixture source only</span></div>
+            <div class="stage-box done"><b>Normalise</b><span>decompose, dedup,<br>attribute tagging</span></div>
+            <div class="stage-box done"><b>Validate</b><span>plausibility bounds,<br>quarantine</span></div>
+            <div class="stage-box done"><b>Store</b><span>append-only raw,<br>DB triggers</span></div>
+            <div class="stage-box done"><b>Index</b><span>pure function,<br>Jevons → Lowe</span></div>
+            <div class="stage-box guard"><b>Publish</b><span>refuses a run it<br>cannot stand behind</span></div>
+          </div>
+          <p class="note">Six of the seven stages are complete and covered by automated tests. The adapter stage holds a deterministic synthetic source because no real one is legally available — and the publisher then refuses any index derived from it, so a fixture number can never be mistaken for a measurement.</p>
+
+          <div class="split">
+            <div class="card">
+              <div class="label">EVERY LAYER CHOSEN AGAINST A ₹0-FOREVER CONSTRAINT</div>
+              <div class="layers">
+                <div class="layer"><b>Compute</b><p><b>Oracle Always Free A1, Indian region</b> — Actions cron drifts 10–30 min, Render sleeps, Fly.io is credits. An Indian egress IP matters: fare pages price by geography.</p></div>
+                <div class="layer"><b>Database</b><p><b>PostgreSQL 16 + TimescaleDB, self-hosted</b> — 2 GB/year kills Supabase (500 MB, pauses after 7 idle days) and Neon (0.5 GB).</p></div>
+                <div class="layer"><b>Queue</b><p><b>Postgres FOR UPDATE SKIP LOCKED</b> — Celery and Redis cost a second daemon and ~200 MB of RAM for 1,155 tasks a day.</p></div>
+                <div class="layer"><b>Scheduler</b><p><b>systemd timers, not cron</b> — OnCalendar, jitter control and journal integration, at no cost and no extra process.</p></div>
+                <div class="layer"><b>Publication</b><p><b>Static artifacts on Cloudflare R2 and Pages</b> — the dashboard keeps serving when the free VM does not.</p></div>
+                <div class="layer"><b>Monitoring</b><p><b>Grafana Cloud Free, UptimeRobot, Telegram</b> — off-box on purpose: self-hosted monitoring dies exactly when it is needed.</p></div>
+              </div>
+            </div>
+
+            <div class="card plain" style="display:flex; flex-direction:column">
+              <div class="label">PROVEN TODAY, IN THE REPOSITORY</div>
+              <ul class="ticks">
+                <li>148 tests passing, 7 skipped without a live Postgres</li>
+                <li>~4,500 lines across 20 modules, lint-clean</li>
+                <li>UPDATE, DELETE and TRUNCATE blocked on the raw quote table by database trigger</li>
+                <li>11 golden tests freeze the published numbers</li>
+                <li>CI re-verifies the hashes nightly at 02:00 IST</li>
+              </ul>
+              <div class="term"><span class="g">$ aerodex verify</span>
+unweighted expected  fd948eae…c737b  OK
+weighted   expected  9dce6946…3ab69  OK
+<span class="b">REPRODUCIBLE</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ 4 ============================ -->
+      <section class="slide dark" aria-label="Feasibility and Viability">
+        <div class="hd">
+          <div class="num">03</div>
+          <h2>Feasibility and Viability</h2>
+          <div class="kick">Spike S3 &nbsp;·&nbsp; four passes &nbsp;·&nbsp; 40+ sources &nbsp;·&nbsp; nine axes each</div>
+        </div>
+        <div class="body">
+          <div class="tablewrap">
+          <table class="matrix">
+            <thead>
+              <tr><th>SOURCE CLASS</th><th>HORIZON?</th><th>AUTOMATION PERMITTED?</th><th>DISPOSITION</th></tr>
+            </thead>
+            <tbody>
+              <tr class="v-red"><td>OTAs — MakeMyTrip, Cleartrip, ixigo, Yatra, EaseMyTrip</td><td>Yes</td><td>No — terms bar it</td><td>RED · terms prohibit systematic retrieval</td></tr>
+              <tr class="v-orange"><td>Airline tariff sheets (Rule 135, Aircraft Rules 1937)</td><td>No</td><td>4 of 5 fail our robots gate</td><td>ORANGE · validation only; killed as an index source</td></tr>
+              <tr class="v-red"><td>Sanctioned APIs — Duffel, Travelpayouts, Amadeus</td><td>Yes</td><td>No — contractual, or dead</td><td>RED · Amadeus decommissioned 17 Jul 2026</td></tr>
+              <tr class="v-red"><td>NDC aggregators and B2B consolidators</td><td>Yes</td><td>IATA / TIDS accreditation</td><td>RED · an agency identity a student team cannot hold</td></tr>
+              <tr class="v-orange"><td>eSankhyiki CPI air-fare index (MoSPI)</td><td>No</td><td>Yes — free, public, no auth</td><td>ORANGE · our M7 validation benchmark</td></tr>
+              <tr class="v-green"><td>DGCA city-pair traffic, ODbL (spike S4)</td><td>n/a</td><td>Yes</td><td>GREEN · in hand, and weighting the panel today</td></tr>
+              <tr class="v-yellow"><td>MoSPI / DGCA institutional holdings</td><td>Yes</td><td>Under statutory authority</td><td>YELLOW · the permission path — highest value</td></tr>
+            </tbody>
+          </table>
+          </div>
+
+          <div class="three">
+            <div class="card">
+              <span class="chip ondark">WHY IT HOLDS</span>
+              <h3 class="ch">Look-to-book economics</h3>
+              <p class="prose sm">Every distribution channel meters search and recovers the cost from bookings. An index books nothing. Duffel writes it into contract; Travelpayouts states it in plain words. This is why further source-searching has negative expected value — we stopped.</p>
+            </div>
+            <div class="card">
+              <span class="chip ondark">TESTED, THEN KILLED</span>
+              <h3 class="ch">The last escape route</h3>
+              <p class="prose sm">Rule 135 tariff sheets looked free, structured and archived. We parsed 14 of them: a fare level is a band, not a price (median max/min 1.25–1.52×, p90 2.82×), levels move −21% to +10% month on month, and the route panel churns to 46.6% survival in a single step.</p>
+            </div>
+            <div class="card">
+              <span class="chip ondark">THE PATH FORWARD</span>
+              <h3 class="ch">Authority, not engineering</h3>
+              <p class="prose sm">MoSPI already collects airfares from online platforms under the Collection of Statistics Act 2008 (CPI 2024 FAQ, Q27), and DGCA has already supplied airfare data to MoSPI — minuted as recommendation 11(a). Two letters are drafted and ready to send.</p>
+            </div>
+          </div>
+
+          <div class="strip navy"><b>RECORDED IN ADVANCE, NOT IMPROVISED —</b> if access does not land inside the SIH timeline, the decision moves to redesigning the index around whatever bounded data the permission path does yield; that revisit condition is written into the decision record. Meanwhile nothing else is blocked — the engine, the hedonic model, the validation path and the eSankhyiki benchmark are all buildable today, and largely built.</div>
+        </div>
+      </section>
+
+      <!-- ============================ 5 ============================ -->
+      <section class="slide light" aria-label="Impact and Benefits">
+        <div class="hd">
+          <div class="num">04</div>
+          <h2>Impact and Benefits</h2>
+          <div class="kick">Who gains, and what they gain that does not exist today</div>
+        </div>
+        <div class="body">
+          <div class="quad">
+            <div class="card">
+              <span class="chip navy">MoSPI</span>
+              <h3>A sub-monthly airfare signal</h3>
+              <p class="prose">CPI publishes one airfare index a month. AeroDex produces a daily national series with route, carrier and booking-horizon breakdowns beneath it — granularity an item index cannot carry. Imputation share and coverage ratio ship with every point, so the Ministry can see how much of each number was actually observed.</p>
+            </div>
+            <div class="card">
+              <span class="chip navy">DGCA</span>
+              <h3>An evidence base for tariff monitoring</h3>
+              <p class="prose">The regulator monitors fares on selected routes today. A continuously observed, horizon-controlled panel turns spot checks into a series: which routes move, how far ahead the movement starts, and whether a festival window or a capacity change is driving it.</p>
+            </div>
+            <div class="card plain">
+              <span class="chip amber">TRAVELLERS</span>
+              <h3>Fare behaviour made legible</h3>
+              <p class="prose">Published openly, methodology alongside: how far ahead to book on a given route, what a festival window costs, and how last-minute pricing differs between full-service and low-cost carriers. The calendar already encodes 8 festivals and 3 vacation windows with lead-day markers.</p>
+            </div>
+            <div class="card plain">
+              <span class="chip green">THE WIDER SYSTEM</span>
+              <h3>Reusable well beyond airfares</h3>
+              <p class="prose">The reproducibility machinery — append-only archive, hashed config, a pure index function, golden tests — is not airfare-specific. Any high-frequency price collection the statistical system takes on can reuse it. At ₹0 recurring, handover carries no budget line.</p>
+            </div>
+          </div>
+          <div class="strip pale"><b>INDEPENDENTLY CORROBORATED —</b> MoSPI's own CPI 2024 series uses Jevons for elementary indices and a Laspeyres-family aggregation above it — the two most consequential choices AeroDex made, arrived at independently and before we knew. The IMF Technical Assistance mission to MoSPI separately recommended a greater variety of advance-purchase timings and treating the airline as a price-determining characteristic; the 7-horizon, carrier-attributed panel already does both.</div>
+        </div>
+      </section>
+
+      <!-- ============================ 6 ============================ -->
+      <section class="slide dark" aria-label="Research and References">
+        <div class="hd">
+          <div class="num">05</div>
+          <h2>Research and References</h2>
+          <div class="kick">Everything below is in the repository and citable</div>
+        </div>
+        <div class="body">
+          <div class="refsplit">
+            <div class="card">
+              <div class="label">THE RESEARCH RECORD</div>
+              <div class="record">
+                <div class="rec"><b>4</b><span>research passes, each one auditing the last</span></div>
+                <div class="rec"><b>40+</b><span>candidate sources assessed end to end</span></div>
+                <div class="rec"><b>9</b><span>independent axes resolved per source</span></div>
+                <div class="rec"><b>38</b><span>claims registered with evidence and a confidence level</span></div>
+                <div class="rec"><b>14</b><span>archived tariff sheets parsed in the one empirical experiment</span></div>
+                <div class="rec"><b>3,200+</b><span>lines of primary-source research checked into the repo</span></div>
+              </div>
+              <p class="prose xs" style="margin-top:calc(16 * var(--pt)); font-style:italic; color:var(--d-dim)">Two verdicts were reversed by later passes. Both reversals are preserved in place rather than rewritten; claims resting on secondary sources are marked PRIMARY SOURCE NOT VERIFIED; and “not found” is kept distinct from “does not exist”.</p>
+            </div>
+
+            <div class="card">
+              <div class="refgroup">
+                <div class="label">STATUTORY AND OFFICIAL</div>
+                <ul>
+                  <li>MoSPI, Consumer Price Index 2024 series — FAQ Q27, on airfare collection through online platforms</li>
+                  <li>MoSPI Expert Group report — recommendation 11(a): DGCA airfare data already supplied to MoSPI</li>
+                  <li>IMF Technical Assistance mission to MoSPI — CPI specification recommendations</li>
+                  <li>The Collection of Statistics Act, 2008</li>
+                  <li>Rule 135, Aircraft Rules 1937, and the DGCA tariff direction of 13 May 2025 — cited secondhand, marked primary source not verified</li>
+                </ul>
+              </div>
+              <div class="refgroup">
+                <div class="label">DATA SOURCES</div>
+                <ul>
+                  <li>MoSPI eSankhyiki portal — CPI “Air fare (normal): economy class”, REST API — esankhyiki.mospi.gov.in</li>
+                  <li>DGCA monthly city-pair traffic — dgca.gov.in; data.gov.in, Monthly Air Traffic Statistics</li>
+                  <li>Vonter/india-aviation-traffic (ODbL, DGCA-derived) — github.com/Vonter/india-aviation-traffic</li>
+                </ul>
+              </div>
+              <div class="refgroup">
+                <div class="label">METHODOLOGY AND STANDARDS</div>
+                <ul>
+                  <li>ILO / IMF / OECD / UNECE / World Bank, Consumer Price Index Manual: Concepts and Methods — Jevons, Lowe, hedonic adjustment, chain-linking</li>
+                  <li>RFC 9309, Robots Exclusion Protocol</li>
+                </ul>
+              </div>
+              <div class="refgroup">
+                <div class="label">MARKET AND FREE-TIER FACTS, VERIFIED 22 AUGUST 2026</div>
+                <ul>
+                  <li>Amadeus Self-Service developer portal decommissioned, 17 July 2026 (PhocusWire)</li>
+                  <li>Oracle Cloud Always Free Ampere A1 reduced to 2 OCPU / 12 GB, 15 June 2026</li>
+                  <li>Cloudflare R2 and Pages, Grafana Cloud and UptimeRobot published free-tier limits</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="s6foot">
+            <span>Full record: <span class="mono">docs/research/s3/</span> — source decision matrix, claim–evidence register, decision record, and the tariff comparability experiment.</span>
+            <span class="mono">github.com/Naveen-Boddepalli/aerodex</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <div class="notes" id="notes" hidden>
+    <div class="notecard">
+      <h4 id="noteLabel">SPEAKER NOTES · SLIDE 1</h4>
+      <p id="noteText"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var deck = document.getElementById('deck');
+  var counter = document.getElementById('counter');
+  var dotsWrap = document.getElementById('dots');
+  var notes = document.getElementById('notes');
+  var noteText = document.getElementById('noteText');
+  var noteLabel = document.getElementById('noteLabel');
+  var notesBtn = document.getElementById('notesBtn');
+  var i = 0;
+
+  var script = [
+    "Open by naming the instrument, not the app. AeroDex measures how Indian airfares move — daily, by route, and by how far ahead you book. Three numbers to land: the statistical machine is built and tested (148 tests), the panel is real and weighted with DGCA traffic data (60 routes, 420 strata), and the whole thing costs nothing to run. Then say the honest part up front: we do not yet hold real fare data, and slide four explains exactly why — because that is the finding, not the excuse.",
+    "Two beats here. First the instrument: 60 routes, 7 horizons, 3 slots a day, and standard national-statistics methodology — Jevons below, Lowe above. Second, the four properties that separate this from a scraped chart: it re-runs bit-identically, its legal position is compiled rather than promised, it publishes its own coverage and imputation share, and it costs nothing. Close on the dark strip and hand straight to slide 3. Expect the question “where do the fares come from” — say “slide four answers that completely” and keep moving.",
+    "Walk the pipeline left to right in one sentence per stage, then stop on the amber box and the navy box — they are the same story told twice. The stack table is the answer to “is this actually free”: every row names what the choice beat and why. If there is time, run aerodex verify live: it recomputes an archived panel and diffs the output hash, which is the M6 guarantee in four seconds.",
+    "This is the slide to slow down on. Read the matrix as two columns, not seven rows: horizon and automation-permitted never both say yes. That is not bad luck, it is unit economics — the middle card. The right-hand card is the ask: MoSPI performs exactly this collection today under statutory authority, and DGCA has already handed airfare data to MoSPI once. We are not asking for an exception; we are asking to operate under an authority that already exists. If pressed on the tariff-sheet experiment, the honest line is: we proposed it, we tested it against 14 archived sheets, and the data killed it.",
+    "Lead with MoSPI, because MoSPI owns the problem statement: the gain is frequency and granularity, plus honest disclosure of coverage. The travellers card is the one a general audience remembers — how far ahead to book, and what Diwali costs. End on the corroboration strip: we did not copy MoSPI's methodology, we converged on it, and the IMF mission recommended the exact panel shape we had already built. That is the strongest credibility line in the deck — do not rush it.",
+    "Do not read this slide out. Use it as the answer sheet: point at whichever group the question came from. The one thing worth saying aloud is the italic note on the left — we reversed our own conclusions twice and left both reversals in the record. That is why the compliance position is a finding rather than a claim, and it is the part of this submission a statistics jury will trust."
+  ];
+
+  // 420 strata = 60 routes x 7 horizons
+  var ramp = ["#24507F","#2A5789","#305F94","#36679E","#3D70A9","#4479B3","#4B82BE"];
+  var g = document.getElementById('grid420'), frag = document.createDocumentFragment();
+  for (var r = 0; r < 7; r++) {
+    for (var c = 0; c < 60; c++) {
+      var d = document.createElement('i');
+      d.style.background = ramp[r];
+      frag.appendChild(d);
+    }
+  }
+  g.appendChild(frag);
+
+  slides.forEach(function(s, n){
+    var b = document.createElement('button');
+    b.className = 'dot';
+    b.type = 'button';
+    b.setAttribute('role','tab');
+    b.setAttribute('aria-label', 'Slide ' + (n+1));
+    b.addEventListener('click', function(){ go(n); });
+    dotsWrap.appendChild(b);
+  });
+  var dots = Array.prototype.slice.call(dotsWrap.children);
+
+  function go(n){
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('on', k === i); });
+    dots.forEach(function(d, k){ d.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    counter.textContent = (i + 1) + ' / ' + slides.length;
+    noteText.textContent = script[i];
+    noteLabel.textContent = 'SPEAKER NOTES · SLIDE ' + (i + 1);
+    if (window.matchMedia('(max-width:820px)').matches) {
+      slides[i].scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+  }
+
+  document.getElementById('prev').addEventListener('click', function(){ go(i - 1); });
+  document.getElementById('next').addEventListener('click', function(){ go(i + 1); });
+  notesBtn.addEventListener('click', function(){
+    var on = notes.hasAttribute('hidden');
+    if (on) { notes.removeAttribute('hidden'); } else { notes.setAttribute('hidden',''); }
+    notesBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    document.querySelector('.app').classList.toggle('with-notes', on);
+  });
+
+  document.addEventListener('keydown', function(e){
+    if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(i + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(i - 1); }
+    else if (e.key === 'Home') { e.preventDefault(); go(0); }
+    else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
+    else if (e.key === 'n' || e.key === 'N') { notesBtn.click(); }
+  });
+
+  go(0);
+})();
+</script>

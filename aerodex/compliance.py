@@ -25,7 +25,7 @@ from aerodex import __version__
 MIN_INTERVAL_PER_HOST_S: float = 20.0
 
 #: User-Agent identifies the project and links to the repo (plan §7).
-REPO_URL = "https://github.com/aerodex/aerodex"
+REPO_URL = "https://github.com/Naveen-Boddepalli/aerodex"
 USER_AGENT = (
     f"AeroDex/{__version__} (+{REPO_URL}; "
     "official-statistics research; contact via repo issues)"

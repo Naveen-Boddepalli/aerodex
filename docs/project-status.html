@@ -1,0 +1,790 @@
+<title>AeroDex Field Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+:root{
+  --bg:#eceff2; --surface:#ffffff; --surface-2:#f4f6f8; --sunk:#e2e6ea;
+  --ink:#10161d; --ink-2:#4c5764; --ink-3:#626d79;
+  --rule:#d2d8de; --rule-2:#e3e8ec;
+  --accent:#1b3a6b; --accent-2:#2f5c9e; --accent-soft:#e4eaf4;
+  --signal:#9a5a12; --signal-soft:#f7ecdd;
+  --ok:#1f6a4a; --ok-soft:#e0efe7;
+  --warn:#8a6412; --warn-soft:#f6eeda;
+  --stop:#9c3226; --stop-soft:#f7e4e1;
+  --shadow:0 1px 2px rgba(16,22,29,.06), 0 8px 24px -16px rgba(16,22,29,.28);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1117; --surface:#141b23; --surface-2:#182029; --sunk:#0f151c;
+    --ink:#e7ebef; --ink-2:#9aa6b2; --ink-3:#8b98a5;
+    --rule:#26303a; --rule-2:#1e2731;
+    --accent:#89aee2; --accent-2:#a8c4ea; --accent-soft:#17222f;
+    --signal:#d99a4a; --signal-soft:#2a2015;
+    --ok:#54b58c; --ok-soft:#122419;
+    --warn:#cfa444; --warn-soft:#221c0f;
+    --stop:#dd7f6f; --stop-soft:#2a1614;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1117; --surface:#141b23; --surface-2:#182029; --sunk:#0f151c;
+  --ink:#e7ebef; --ink-2:#9aa6b2; --ink-3:#8b98a5;
+  --rule:#26303a; --rule-2:#1e2731;
+  --accent:#89aee2; --accent-2:#a8c4ea; --accent-soft:#17222f;
+  --signal:#d99a4a; --signal-soft:#2a2015;
+  --ok:#54b58c; --ok-soft:#122419;
+  --warn:#cfa444; --warn-soft:#221c0f;
+  --stop:#dd7f6f; --stop-soft:#2a1614;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Archivo","Helvetica Neue",Arial,sans-serif;
+  font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+p, .prose li{font-family:"Source Serif 4",Georgia,serif; font-size:16.5px; line-height:1.62; color:var(--ink-2)}
+p{margin:0 0 .9em; max-width:68ch}
+code, .mono, kbd{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+code{font-size:.86em; background:var(--sunk); padding:.12em .38em; border-radius:2px; color:var(--ink); word-break:break-word}
+a{color:var(--accent); text-decoration:none; border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent)}
+a:hover{border-bottom-color:var(--accent)}
+a:focus-visible, button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+h1,h2,h3,h4{text-wrap:balance; margin:0; font-weight:600; letter-spacing:-.01em}
+
+/* ---------- shell ---------- */
+.wrap{max-width:1240px; margin:0 auto; padding:0 clamp(16px,3vw,32px)}
+.masthead{border-bottom:1px solid var(--rule); background:var(--surface)}
+.mast-in{display:flex; flex-wrap:wrap; gap:24px 40px; align-items:flex-end; justify-content:space-between; padding:34px 0 26px}
+.eyebrow{font-size:11px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3)}
+h1{font-size:clamp(30px,4.4vw,44px); line-height:1.04; margin:8px 0 10px; letter-spacing:-.025em}
+h1 .dex{color:var(--accent)}
+.tagline{font-family:"Source Serif 4",Georgia,serif; font-size:17px; color:var(--ink-2); max-width:52ch; margin:0}
+.mast-meta{display:flex; gap:26px; flex-wrap:wrap; font-size:12.5px}
+.mast-meta div{display:flex; flex-direction:column; gap:3px}
+.mast-meta dt, .mk{font-size:10.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3)}
+.mast-meta dd, .mv{margin:0; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink); font-weight:500}
+
+.layout{display:grid; grid-template-columns:212px minmax(0,1fr); gap:48px; align-items:start; padding:36px 0 90px}
+@media (max-width:920px){ .layout{grid-template-columns:1fr; gap:0; padding-top:20px} }
+
+/* ---------- rail ---------- */
+.rail{position:sticky; top:20px; font-size:13px}
+@media (max-width:920px){
+  .rail{position:static; margin-bottom:28px; background:var(--surface); border:1px solid var(--rule); padding:14px 16px}
+}
+.rail .mk{margin-bottom:10px; display:block}
+.rail ol{list-style:none; margin:0; padding:0; display:flex; flex-direction:column}
+@media (max-width:920px){ .rail ol{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:2px} }
+.rail a{
+  display:flex; gap:9px; align-items:baseline; padding:5.5px 0 5.5px 10px;
+  border:0; border-left:2px solid var(--rule-2); color:var(--ink-2); line-height:1.35;
+}
+.rail a:hover{color:var(--ink); border-left-color:var(--accent); background:var(--surface-2)}
+.rail a .n{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--ink-3); flex:none}
+
+/* ---------- sections ---------- */
+section{scroll-margin-top:16px; margin-bottom:56px}
+.sec-head{display:flex; align-items:baseline; gap:12px; border-bottom:2px solid var(--ink); padding-bottom:8px; margin-bottom:20px}
+.sec-head .n{font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; color:var(--accent); letter-spacing:.04em}
+.sec-head h2{font-size:22px; letter-spacing:-.02em}
+h3{font-size:15.5px; margin:26px 0 10px; letter-spacing:0}
+h3.rule{border-top:1px solid var(--rule); padding-top:18px}
+h4{font-size:13px; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); margin:20px 0 8px}
+
+.panel{background:var(--surface); border:1px solid var(--rule); padding:20px 22px; box-shadow:var(--shadow)}
+.panel + .panel{margin-top:14px}
+.lede{font-size:18px; line-height:1.55; color:var(--ink); max-width:64ch}
+.lede strong{font-weight:600}
+
+/* ---------- kpi strip ---------- */
+.kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); border:1px solid var(--rule); background:var(--rule); gap:1px; margin:0 0 26px}
+.kpi{background:var(--surface); padding:13px 15px}
+.kpi .v{font-family:"IBM Plex Mono",monospace; font-size:21px; font-weight:600; line-height:1.1; font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+.kpi .l{font-size:10.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); margin-top:5px}
+.kpi.good .v{color:var(--ok)} .kpi.warn .v{color:var(--warn)} .kpi.stop .v{color:var(--stop)}
+
+/* ---------- chips ---------- */
+.chip{
+  display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
+  font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:600;
+  letter-spacing:.06em; text-transform:uppercase; padding:2.5px 7px; border-radius:2px;
+  border:1px solid transparent;
+}
+.chip::before{content:""; width:5px; height:5px; border-radius:50%; background:currentColor; flex:none}
+.chip.done{color:var(--ok); background:var(--ok-soft); border-color:color-mix(in srgb,var(--ok) 26%,transparent)}
+.chip.part{color:var(--warn); background:var(--warn-soft); border-color:color-mix(in srgb,var(--warn) 26%,transparent)}
+.chip.todo{color:var(--ink-3); background:var(--sunk); border-color:var(--rule)}
+.chip.block{color:var(--stop); background:var(--stop-soft); border-color:color-mix(in srgb,var(--stop) 26%,transparent)}
+.chip.ext{color:var(--signal); background:var(--signal-soft); border-color:color-mix(in srgb,var(--signal) 30%,transparent)}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto; border:1px solid var(--rule); background:var(--surface); margin:12px 0 0}
+table{border-collapse:collapse; width:100%; font-size:13.5px; min-width:520px}
+th,td{text-align:left; padding:9px 13px; border-bottom:1px solid var(--rule-2); vertical-align:top}
+thead th{
+  background:var(--surface-2); font-size:10.5px; font-weight:600; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--ink-3); border-bottom:1px solid var(--rule); white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--surface-2)}
+td.num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; white-space:nowrap}
+td.path{font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:nowrap; color:var(--ink)}
+td.mid{width:34%}
+caption{caption-side:bottom; text-align:left; padding:9px 13px; font-size:12px; color:var(--ink-3); border-top:1px solid var(--rule-2)}
+
+/* ---------- flight strips (phase/spike state) ---------- */
+.strips{display:flex; flex-direction:column; gap:2px; margin-top:12px}
+.strip{
+  display:grid; grid-template-columns:78px 1fr auto; gap:14px; align-items:center;
+  background:var(--surface); border:1px solid var(--rule); border-left-width:4px; padding:11px 14px;
+}
+.strip.s-done{border-left-color:var(--ok)}
+.strip.s-part{border-left-color:var(--warn)}
+.strip.s-todo{border-left-color:var(--rule)}
+.strip.s-block{border-left-color:var(--stop)}
+.strip .id{font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; letter-spacing:.03em}
+.strip .txt{font-size:13.5px; line-height:1.45; color:var(--ink-2)}
+.strip .txt b{color:var(--ink); font-weight:600}
+@media (max-width:620px){
+  .strip{grid-template-columns:1fr auto; gap:6px 12px}
+  .strip .id{grid-column:1}
+  .strip .txt{grid-column:1/-1}
+}
+
+/* ---------- callouts ---------- */
+.note{border:1px solid var(--rule); border-top:3px solid var(--accent); background:var(--surface); padding:16px 18px; margin:18px 0}
+.note.alert{border-top-color:var(--signal); background:var(--signal-soft)}
+.note.stop{border-top-color:var(--stop); background:var(--stop-soft)}
+.note .mk{display:block; margin-bottom:7px; color:var(--ink-2)}
+.note p:last-child{margin-bottom:0}
+.note p{max-width:none}
+
+/* ---------- code ---------- */
+pre{
+  background:var(--sunk); border:1px solid var(--rule); padding:13px 15px; overflow-x:auto;
+  font-family:"IBM Plex Mono",monospace; font-size:12.5px; line-height:1.65; margin:10px 0; color:var(--ink);
+}
+pre .c{color:var(--ink-3)}
+pre .p{color:var(--accent)}
+
+/* ---------- pipeline svg ---------- */
+.figure{background:var(--surface); border:1px solid var(--rule); padding:18px; margin:16px 0; overflow-x:auto}
+.figure svg{display:block; min-width:640px; width:100%; height:auto}
+.figcap{font-size:12px; color:var(--ink-3); margin-top:10px; max-width:none; font-family:"Archivo",sans-serif}
+
+/* ---------- misc ---------- */
+ul.tight{margin:8px 0 0; padding-left:19px}
+ul.tight li{margin-bottom:6px; font-size:14px; line-height:1.5; color:var(--ink-2); font-family:"Archivo",sans-serif}
+ul.tight li b{color:var(--ink); font-weight:600}
+.two{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px}
+.gloss{display:grid; grid-template-columns:auto 1fr; gap:0; border:1px solid var(--rule); background:var(--surface)}
+.gloss dt{font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:10px 14px; border-bottom:1px solid var(--rule-2); white-space:nowrap; background:var(--surface-2)}
+.gloss dd{margin:0; padding:10px 14px; border-bottom:1px solid var(--rule-2); font-size:14px; color:var(--ink-2)}
+.gloss dt:last-of-type, .gloss dd:last-of-type{border-bottom:0}
+@media (max-width:620px){ .gloss{grid-template-columns:1fr} .gloss dt{border-bottom:0} }
+footer{border-top:1px solid var(--rule); padding:22px 0 40px; font-size:12.5px; color:var(--ink-3)}
+</style>
+
+<div class="masthead">
+  <div class="wrap mast-in">
+    <div>
+      <span class="eyebrow">Smart India Hackathon 2026 &middot; PS SIH26056 &middot; MoSPI</span>
+      <h1>Aero<span class="dex">Dex</span> Field Guide</h1>
+      <p class="tagline">Everything a team member needs: what the project must deliver, what is built and proven, what is blocked, and what is left.</p>
+    </div>
+    <dl class="mast-meta">
+      <div><dt>Repo state</dt><dd>main &middot; 6 commits</dd></div>
+      <div><dt>Guide written</dt><dd>23 Aug 2026</dd></div>
+      <div><dt>Test suite</dt><dd>148 pass / 7 skip</dd></div>
+      <div><dt>Verdict</dt><dd>B &mdash; permission path</dd></div>
+    </dl>
+  </div>
+</div>
+
+<div class="wrap layout">
+
+<nav class="rail" aria-label="Sections">
+  <span class="mk">Contents</span>
+  <ol>
+    <li><a href="#situation"><span class="n">01</span><span>Read this first</span></a></li>
+    <li><a href="#requirements"><span class="n">02</span><span>What SIH requires</span></a></li>
+    <li><a href="#done"><span class="n">03</span><span>What is built</span></a></li>
+    <li><a href="#blocker"><span class="n">04</span><span>The blocker</span></a></li>
+    <li><a href="#remaining"><span class="n">05</span><span>What remains</span></a></li>
+    <li><a href="#map"><span class="n">06</span><span>Every file explained</span></a></li>
+    <li><a href="#concepts"><span class="n">07</span><span>Concepts &amp; jargon</span></a></li>
+    <li><a href="#run"><span class="n">08</span><span>Running it</span></a></li>
+    <li><a href="#audit"><span class="n">09</span><span>Gap audit</span></a></li>
+    <li><a href="#start"><span class="n">10</span><span>Where to start</span></a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ================= 01 ================= -->
+<section id="situation">
+  <div class="sec-head"><span class="n">01</span><h2>Read this first</h2></div>
+
+  <div class="kpis">
+    <div class="kpi good"><div class="v">148</div><div class="l">tests passing</div></div>
+    <div class="kpi good"><div class="v">60</div><div class="l">routes weighted</div></div>
+    <div class="kpi good"><div class="v">420</div><div class="l">strata defined</div></div>
+    <div class="kpi warn"><div class="v">0</div><div class="l">real fares held</div></div>
+    <div class="kpi stop"><div class="v">1</div><div class="l">external blocker</div></div>
+    <div class="kpi"><div class="v">~4.5k</div><div class="l">lines of code</div></div>
+  </div>
+
+  <div class="panel">
+    <p class="lede">AeroDex builds a <strong>real-time airfare price index for India</strong> for MoSPI, on ₹0 recurring spend. The statistical machine is built, tested and reproducible. What it does not have is <strong>real fare data</strong> &mdash; and that is not an engineering problem. Four rounds of research proved that no source in existence gives flight-level fares at controlled booking horizons in a way that is both legally permitted and free. The project's own compliance code refuses to collect from any of them.</p>
+    <p style="margin-bottom:0">So the pipeline runs today end to end on a <strong>fixture adapter</strong> &mdash; synthetic fares that exercise every stage. The publisher deliberately <em>refuses</em> to release a number derived from it. The critical path is now a letter to MoSPI and DGCA asking for access under their statutory authority, running in parallel with continued engineering that is not blocked.</p>
+  </div>
+
+  <div class="figure">
+    <svg viewBox="0 0 940 168" role="img" aria-label="Pipeline diagram: scheduler, adapter, normalise, validate, store, index, publish. Every stage is built; the adapter stage is synthetic and the publish stage is deliberately refused.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g font-family="Archivo, sans-serif">
+        <!-- stages -->
+        <g>
+          <!-- 1 scheduler -->
+          <rect x="4" y="46" width="112" height="48" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="1"/>
+          <text x="60" y="67" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--ink)">scheduler</text>
+          <text x="60" y="83" text-anchor="middle" font-size="10" fill="var(--ink-2)" font-family="IBM Plex Mono, monospace">systemd</text>
+          <!-- 2 adapter -->
+          <rect x="140" y="46" width="112" height="48" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1"/>
+          <text x="196" y="67" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--ink)">adapter</text>
+          <text x="196" y="83" text-anchor="middle" font-size="10" fill="var(--warn)" font-family="IBM Plex Mono, monospace">fixture only</text>
+          <!-- 3 normalise -->
+          <rect x="276" y="46" width="112" height="48" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="1"/>
+          <text x="332" y="67" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--ink)">normalise</text>
+          <text x="332" y="83" text-anchor="middle" font-size="10" fill="var(--ink-2)" font-family="IBM Plex Mono, monospace">dedup + tag</text>
+          <!-- 4 validate -->
+          <rect x="412" y="46" width="112" height="48" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="1"/>
+          <text x="468" y="67" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--ink)">validate</text>
+          <text x="468" y="83" text-anchor="middle" font-size="10" fill="var(--ink-2)" font-family="IBM Plex Mono, monospace">quarantine</text>
+          <!-- 5 store -->
+          <rect x="548" y="46" width="112" height="48" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="1"/>
+          <text x="604" y="67" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--ink)">store</text>
+          <text x="604" y="83" text-anchor="middle" font-size="10" fill="var(--ink-2)" font-family="IBM Plex Mono, monospace">append-only</text>
+          <!-- 6 index -->
+          <rect x="684" y="46" width="112" height="48" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="1"/>
+          <text x="740" y="67" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--ink)">index</text>
+          <text x="740" y="83" text-anchor="middle" font-size="10" fill="var(--ink-2)" font-family="IBM Plex Mono, monospace">pure function</text>
+          <!-- 7 publish -->
+          <rect x="820" y="46" width="112" height="48" fill="var(--stop-soft)" stroke="var(--stop)" stroke-width="1"/>
+          <text x="876" y="67" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--ink)">publish</text>
+          <text x="876" y="83" text-anchor="middle" font-size="10" fill="var(--stop)" font-family="IBM Plex Mono, monospace">refused</text>
+        </g>
+        <!-- arrows -->
+        <g stroke="var(--ink-3)" stroke-width="1.2" marker-end="url(#ar)" color="var(--ink-3)" fill="none">
+          <line x1="118" y1="70" x2="136" y2="70"/><line x1="254" y1="70" x2="272" y2="70"/>
+          <line x1="390" y1="70" x2="408" y2="70"/><line x1="526" y1="70" x2="544" y2="70"/>
+          <line x1="662" y1="70" x2="680" y2="70"/><line x1="798" y1="70" x2="816" y2="70"/>
+        </g>
+        <!-- annotations -->
+        <text x="196" y="26" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--warn)" letter-spacing=".07em">▲ NO REAL SOURCE PERMITTED</text>
+        <text x="876" y="26" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--stop)" letter-spacing=".07em">▲ BY DESIGN</text>
+        <line x1="196" y1="32" x2="196" y2="42" stroke="var(--warn)" stroke-width="1"/>
+        <line x1="876" y1="32" x2="876" y2="42" stroke="var(--stop)" stroke-width="1"/>
+        <text x="4" y="126" font-size="11.5" fill="var(--ink-2)" font-family="Source Serif 4, serif">Six of seven stages are complete and covered by tests. The adapter stage holds a synthetic source because no real one is</text>
+        <text x="4" y="142" font-size="11.5" fill="var(--ink-2)" font-family="Source Serif 4, serif">legally available; the publisher then refuses the resulting number, so a fixture-derived index can never be mistaken for a measurement.</text>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<!-- ================= 02 ================= -->
+<section id="requirements">
+  <div class="sec-head"><span class="n">02</span><h2>What SIH actually requires</h2></div>
+
+  <p>The problem statement asks for a real-time airfare price index for India, sponsored by the <strong>Ministry of Statistics and Programme Implementation</strong>. The team converted that into seven measurable commitments in <code>plan.md</code>. Every architectural decision in the repo is judged against them &mdash; they are the contract, not aspirations.</p>
+
+  <h3>The seven success metrics</h3>
+  <div class="tw"><table>
+    <thead><tr><th>ID</th><th>Metric</th><th>Target</th><th class="mid">Why it constrains the build</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td class="num">M1</td><td>Route panel</td><td class="num">≥ 60 O–D pairs</td><td>Forces ~1,155 stratum-slots collectable per day</td><td><span class="chip done">defined</span></td></tr>
+      <tr><td class="num">M2</td><td>Quote volume</td><td class="num">6–10k/day</td><td>~2.6M rows/year kills every free managed Postgres tier</td><td><span class="chip block">no data</span></td></tr>
+      <tr><td class="num">M3</td><td>Collection success</td><td class="num">≥ 95%</td><td>Scheduler must not drift &mdash; this killed GitHub Actions cron as primary</td><td><span class="chip part">measured on fixture</span></td></tr>
+      <tr><td class="num">M4</td><td>Publication latency</td><td class="num">≤ 2 h</td><td>Index run must finish in under 30 min</td><td><span class="chip part">engine fast; no publisher</span></td></tr>
+      <tr><td class="num">M5</td><td>Imputation share</td><td class="num">≤ 5% of weight</td><td>Missing data must be explicit, never silent</td><td><span class="chip done">implemented + enforced</span></td></tr>
+      <tr><td class="num">M6</td><td>Reproducibility</td><td class="num">100% bit-identical</td><td>Raw archive + config hashing become mandatory</td><td><span class="chip done">proven in CI</span></td></tr>
+      <tr><td class="num">M7</td><td>External agreement</td><td class="num">quarterly vs CPI</td><td>Needs free access to CPI + DGCA series</td><td><span class="chip todo">source found, not wired</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="rule">The ₹0 constraint</h3>
+  <p>Every component must run <em>forever</em> on a permanent free tier &mdash; not a 12-month trial, not credits. This one rule eliminated most of the obvious choices before taste entered the picture, and it is a genuine differentiator in the pitch: the whole system can be handed to a ministry with no invoice attached.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Layer</th><th>Chosen</th><th class="mid">What it beat, and why</th></tr></thead>
+    <tbody>
+      <tr><td>Compute</td><td>Oracle Always Free A1 (2 OCPU / 12 GB, Indian region)</td><td>GitHub Actions cron drifts 10–30 min; Render/Railway sleep; Fly.io is credits. An Indian egress IP also matters — fare pages price by geography</td></tr>
+      <tr><td>Database</td><td>Self-hosted Postgres 16 + TimescaleDB</td><td>Supabase caps at 500 MB and pauses after 7 days idle; Neon at 0.5 GB. 2 GB/year kills both</td></tr>
+      <tr><td>Job queue</td><td>Postgres <code>FOR UPDATE SKIP LOCKED</code></td><td>Celery+Redis costs a second daemon and ~200 MB RAM for 1,155 tasks/day; Upstash free is 10k commands/day</td></tr>
+      <tr><td>Publication</td><td>Static files on Cloudflare R2 + Pages</td><td>Dashboard keeps serving when the free VM dies. Vercel Hobby bars commercial use — awkward when handing to a ministry</td></tr>
+      <tr><td>Scheduler</td><td>systemd timers</td><td>Not cron: <code>OnCalendar</code>, jitter control and journal integration for free</td></tr>
+      <tr><td>Monitoring</td><td>Grafana Cloud Free + UptimeRobot + Telegram</td><td>Off-box on purpose — self-hosted monitoring dies exactly when you need it</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="rule">The six build phases and their exit gates</h3>
+  <div class="strips">
+    <div class="strip s-part"><span class="id">Phase 0</span><span class="txt"><b>Feasibility spikes.</b> Four go/no-go questions answered before building. Exit: one real fare, one route, one Postgres row on the VM.</span><span class="chip part">2 of 4</span></div>
+    <div class="strip s-done"><span class="id">Phase 1</span><span class="txt"><b>Vertical slice.</b> Full path scheduler → adapter → normalise → validate → store → index → JSON. Exit: a Jevons index for three routes, reproducible from archive.</span><span class="chip done">complete on fixture</span></div>
+    <div class="strip s-block"><span class="id">Phase 2</span><span class="txt"><b>Panel and acquisition hardening.</b> 60 routes, 7 horizons, 3 slots, all viable sources, health monitor, canaries, fallback ladder. Exit: M1, M2, M3 ≥ 95% over 7 days.</span><span class="chip block">blocked on access</span></div>
+    <div class="strip s-part"><span class="id">Phase 3</span><span class="txt"><b>The methodology.</b> Hedonic adjustment, Lowe aggregation, imputation, STL, chaining, revision policy, config hashing. Exit: M5 reported, golden tests pass, two runs identical.</span><span class="chip part">~half done</span></div>
+    <div class="strip s-todo"><span class="id">Phase 4</span><span class="txt"><b>Publication.</b> R2 artifacts, Pages dashboard, FastAPI behind Cloudflare Tunnel, MkDocs site, Grafana, four alerts, restore drill. Exit: M4 met; dashboard survives a deliberate VM shutdown.</span><span class="chip todo">not started</span></div>
+    <div class="strip s-todo"><span class="id">Phase 5</span><span class="txt"><b>Validation and narrative.</b> Back-test vs CPI Transport and DGCA yields, formula sensitivity, coverage stress test, validation report. Exit: M6 and M7 evidenced.</span><span class="chip todo">not started</span></div>
+  </div>
+
+  <h4>Phase 0 spikes in detail</h4>
+  <div class="tw"><table>
+    <thead><tr><th>Spike</th><th class="mid">Question</th><th>Outcome</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="num">S1</td><td>Can an Oracle A1 instance be provisioned in an Indian region?</td><td>Needs an Oracle account with a card for identity verification. Nobody has run it.</td><td><span class="chip todo">not started</span></td></tr>
+      <tr><td class="num">S2</td><td>Does <code>playwright install chromium</code> run on Ubuntu 24.04 arm64?</td><td>Depends on S1 &mdash; there is no VM to test on. Also now low-priority: no source to render.</td><td><span class="chip todo">blocked on S1</span></td></tr>
+      <tr><td class="num">S3</td><td>Across ~6 candidate sources, can one fare be retrieved without login, with a tier-2 JSON endpoint?</td><td><b>Answered exhaustively over four research passes.</b> Technically yes; legally no. Zero sources are usable. See §04.</td><td><span class="chip done">complete</span></td></tr>
+      <tr><td class="num">S4</td><td>Does the DGCA weights dataset parse into the 60-route panel?</td><td><b>Yes.</b> All 60 routes carry a real weight summing to 1.000000, vintage <code>dgca-2025-city-pairs-r2</code>.</td><td><span class="chip done">complete</span></td></tr>
+    </tbody>
+  </table></div>
+  <div class="note alert">
+    <span class="mk">Stale documentation</span>
+    <p>The <code>README.md</code> status table still says all four spikes are "not started" and that route weights are <code>null</code> placeholders. Both statements were true when written and are now wrong &mdash; S3 and S4 are done. Fixing this is item <b>A-1</b> in the gap audit (§09), and it matters because the README is the first thing a judge reads.</p>
+  </div>
+</section>
+
+<!-- ================= 03 ================= -->
+<section id="done">
+  <div class="sec-head"><span class="n">03</span><h2>What is built, section by section</h2></div>
+
+  <p>Everything below is in the repository, passing tests, and lint-clean under <code>ruff</code>. The claim "built" here means covered by an automated test, not merely written.</p>
+
+  <h3>Configuration &amp; provenance <span class="chip done" style="vertical-align:middle">complete</span></h3>
+  <p>Three YAML files hold every methodology choice, and none of it lives in Python &mdash; config in code is not auditable. Each file is SHA-256 hashed over a <em>canonical</em> serialisation (sorted keys, no whitespace), so reordering keys or reflowing comments does not invent a spurious new vintage, but changing any value always does. That hash is stamped onto every index point.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Fact</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Routes / horizons / slots</td><td class="num">60 × 7 × 3</td></tr>
+      <tr><td>Strata (route × horizon)</td><td class="num">420</td></tr>
+      <tr><td>Stratum-slots per day</td><td class="num">1,260 reported (plan targets ~1,155 after overlap suppression)</td></tr>
+      <tr><td>Weight coverage</td><td class="num">60 / 60, sum 1.000000</td></tr>
+      <tr><td>Weights vintage</td><td class="num">dgca-2025-city-pairs-r2</td></tr>
+      <tr><td>Methodology config hash</td><td class="num">8eac16ab…7261b2</td></tr>
+      <tr><td>Panel config hash</td><td class="num">945c04f6…bab466</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="rule">Compliance engine <span class="chip done" style="vertical-align:middle">complete &mdash; 62 tests</span></h3>
+  <p>The pitch's legal position is enforced as runtime assertions in one file, so violating a rule requires deliberately editing a file called <code>compliance.py</code>. There is no bypass flag, on purpose.</p>
+  <ul class="tight">
+    <li><b>No authentication, ever.</b> <code>Authorization</code>, <code>Cookie</code>, <code>X-API-Key</code> and friends are rejected before a request leaves the process.</li>
+    <li><b>No personal data, ever.</b> A field-name denylist (names, email, PNR, passport, payment, loyalty numbers) blocks it at the record level.</li>
+    <li><b>20-second floor between requests to the same host</b>, enforced by a thread-safe rate limiter rather than by convention.</li>
+    <li><b>A custom RFC 9309 robots.txt parser.</b> Python's <code>urllib.robotparser</code> was found to have four defects, each of which silently <em>granted</em> access a site had refused — including discarding an entire ruleset. That discovery is written up in <code>docs/spikes/robots-parser-defects.md</code> and drove the replacement.</li>
+    <li><b>Unreachable robots.txt means disallowed.</b> So do 401, 403 and 429 — a robots file behind auth is a signal about automation, not an absence of one.</li>
+    <li><b>A User-Agent that names the project and links to the repo.</b></li>
+  </ul>
+
+  <h3 class="rule">Acquisition framework <span class="chip part" style="vertical-align:middle">framework done, no real source</span></h3>
+  <p>The adapter contract is deliberately narrow: <code>search() → parse() → emit()</code>, one file per source, so a failing source is isolated. It encodes the three-tier ladder &mdash; documented public JSON, then internal XHR endpoint, then full Playwright render only as a last resort. On 2 OCPU that ordering is the difference between a 60-route panel and a 10-route one.</p>
+  <p style="margin-bottom:0">The only adapter that exists is <code>fixture.py</code>, which makes no network calls and marks itself <code>is_synthetic = True</code>. Its flight roster is seeded on route and horizon (so the same flight numbers recur daily, as real schedules do) while only the fare moves &mdash; which is exactly what matched-model comparison needs to be exercised honestly.</p>
+
+  <h3 class="rule">Storage <span class="chip done" style="vertical-align:middle">schema complete, 7 tests skipped without a DB</span></h3>
+  <p>Five tables, with two hard invariants encoded in the database rather than in review comments:</p>
+  <div class="tw"><table>
+    <thead><tr><th>Table</th><th class="mid">Purpose</th><th>Notable</th></tr></thead>
+    <tbody>
+      <tr><td class="path">quote_raw</td><td>One row per observation exactly as parsed. Never updated.</td><td>Triggers block UPDATE, DELETE <em>and</em> TRUNCATE. M6 depends on it</td></tr>
+      <tr><td class="path">quote_clean</td><td>Normalised, deduplicated, attribute-tagged, with a validation status</td><td>Timescale hypertable on <code>collected_at</code></td></tr>
+      <tr><td class="path">index_point</td><td>Published values, each carrying config hash, panel hash and weights vintage</td><td>⚠ Nothing writes to it yet — see audit A-8</td></tr>
+      <tr><td class="path">job</td><td>The queue. <code>SELECT … FOR UPDATE SKIP LOCKED</code></td><td>Retries are a column; unique on (kind, time, payload) so enqueue is idempotent</td></tr>
+      <tr><td class="path">adapter_health</td><td>Per-source, per-slot success counts for M3</td><td>Table exists; nothing populates it yet</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="rule">Index engine <span class="chip done" style="vertical-align:middle">core complete &mdash; 11 golden + 12 elementary tests</span></h3>
+  <p><code>compute_index(panel, config) → DataFrame</code> is a <strong>pure function</strong>: no clock, no database, no network. That single constraint is what makes reproducibility achievable, and a test literally parses the module's source to assert it never acquires one of those imports &mdash; because that failure would only surface as a published number quietly moving months later.</p>
+  <ul class="tight">
+    <li><b>Jevons</b> elementary index, computed in log space so large panels do not underflow. Chosen over Carli (upward bias) and Dutot (not unit-invariant).</li>
+    <li><b>Lowe/Laspeyres</b> aggregation on fixed DGCA traffic weights, with renormalisation over the strata that actually reported.</li>
+    <li><b>Imputation</b> by group-mean movement, with the imputed share of weight published on every index point and a hard ceiling flag at 5%.</li>
+    <li><b>Coverage ratio</b> and matched-quote counts emitted per period.</li>
+    <li><b>Output hashing</b> rounded to six decimals — float noise below published precision is not a reproducibility failure, but anything visible in a published number is.</li>
+  </ul>
+
+  <h3 class="rule">Reproducibility guarantee (M6) <span class="chip done" style="vertical-align:middle">proven</span></h3>
+  <p>A frozen input panel and a frozen expected output are checked in. Eleven golden tests assert bit-identical re-runs, that row order cannot change the result, that two runs in one process do not differ, that weights actually reach the engine, and that a deliberate coverage hole surfaces as an M5 flag rather than vanishing. Change one value in <code>methodology.yaml</code> and several fail loudly.</p>
+  <pre><span class="c"># the M6 check, runnable right now</span>
+<span class="p">$</span> uv run python -m aerodex.cli verify
+unweighted  expected: fd948eae…c737b   OK
+weighted    expected: 9dce6946…3ab69   OK
+REPRODUCIBLE</pre>
+
+  <h3 class="rule">Publication guard <span class="chip part" style="vertical-align:middle">refusal logic done, delivery missing</span></h3>
+  <p style="margin-bottom:0">The artifact builder assembles <code>index_latest.json</code>, <code>index_full.csv</code>, a dated release and <code>methodology.json</code> &mdash; and refuses two things outright: a panel whose only source is synthetic, and any period that breached the imputation ceiling. Both raise <code>PublicationRefused</code>. What is missing is everything downstream: the R2 upload, the dashboard and the API.</p>
+
+  <h3 class="rule">Automation <span class="chip part" style="vertical-align:middle">3 of 4 workflows</span></h3>
+  <ul class="tight">
+    <li><b><code>ci.yml</code></b> — spins up TimescaleDB, applies the schema, lints, runs the suite, then runs the M6 verify as a separate named step.</li>
+    <li><b><code>reproducibility.yml</code></b> — nightly at 02:00 IST, re-verifies the frozen hashes.</li>
+    <li><b><code>keepalive.yml</code></b> — pings every 20 days to defeat GitHub's 60-day disable of scheduled workflows on inactive repos.</li>
+    <li><b><code>backup-collector.yml</code></b> — <span class="chip todo">missing</span> planned as the redundant 6-hourly collector.</li>
+    <li><b>systemd units</b> — a templated service and timer per slot, with jitter, plus a README explaining that <code>OnCalendar</code> cannot read a clock time from the instance name so each slot needs a drop-in.</li>
+  </ul>
+
+  <h3 class="rule">Research output <span class="chip done" style="vertical-align:middle">substantial deliverable in its own right</span></h3>
+  <p style="margin-bottom:0">Over 3,200 lines of primary-source research across <code>docs/spikes/</code> and <code>docs/research/s3/</code>: forty-plus candidate sources assessed on nine independent axes, terms of use read clause by clause, 38 claims individually registered with evidence and confidence, and one genuine empirical experiment on 14 archived tariff sheets. This is presentable material &mdash; it is the reason the project can state its compliance position as a finding rather than a promise.</p>
+</section>
+
+<!-- ================= 04 ================= -->
+<section id="blocker">
+  <div class="sec-head"><span class="n">04</span><h2>The blocker, and why it is not an engineering problem</h2></div>
+
+  <div class="note stop">
+    <span class="mk">Spike S3 &mdash; final verdict</span>
+    <p style="font-size:16px; color:var(--ink)"><b>B — Proceed with the permission path.</b> The methodology is sound. The blocker is data access, and it is external to the project. No source provides flight-level offered fares at controlled booking horizons, permitted, at ₹0. Zero candidates survived out of forty-plus, across four research passes.</p>
+  </div>
+
+  <h3>The pattern that decides it</h3>
+  <p>Read two columns of the source matrix together and the structure appears immediately: <strong>every source with a booking horizon fails "automation permitted", and every source that permits automation has no horizon.</strong> That is not coincidence. It is look-to-book economics &mdash; every distribution channel meters search and recovers the cost from bookings, and AeroDex books nothing. Duffel writes it into contract (zero orders are counted as one order); Travelpayouts states it in plain words. This is why further source-searching has negative expected value.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>Source class</th><th>Horizon?</th><th>Automation permitted?</th><th class="mid">Disposition</th></tr></thead>
+    <tbody>
+      <tr><td>OTAs — MakeMyTrip, Cleartrip, ixigo, Yatra, EaseMyTrip</td><td>✓</td><td>✗ terms bar it</td><td><span class="chip block">RED</span> Terms prohibit systematic retrieval. A fare <em>was</em> retrieved from ixigo during pass 1; that evidence must not be used</td></tr>
+      <tr><td>Airline tariff sheets (Rule 135)</td><td>✗</td><td>4 of 5 fail the robots gate</td><td><span class="chip ext">ORANGE</span> Validation only. Killed as an index source empirically — see below</td></tr>
+      <tr><td>Sanctioned APIs — Duffel, Travelpayouts, Amadeus</td><td>✓</td><td>✗ contractual or dead</td><td><span class="chip block">RED</span> Amadeus decommissioned 17 Jul 2026; the others bar search without booking</td></tr>
+      <tr><td>NDC aggregators, B2B consolidators</td><td>✓</td><td>Requires IATA/TIDS/IATAN accreditation</td><td><span class="chip block">RED</span> An agency identity a student team cannot hold</td></tr>
+      <tr><td>eSankhyiki CPI air-fare index</td><td>✗</td><td>✓ free, public, no auth</td><td><span class="chip ext">ORANGE</span> Not an index input, but a valid M7 benchmark. The one new capability S3 produced</td></tr>
+      <tr><td>DGCA city-pair traffic (spike S4)</td><td>n/a</td><td>✓ ODbL</td><td><span class="chip done">GREEN for weights</span> Already in hand and in use</td></tr>
+      <tr><td>MoSPI / DGCA institutional holdings</td><td>✓</td><td>Under statutory authority</td><td><span class="chip ext">YELLOW — highest value</span> The permission path</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="rule">The experiment that closed the last escape route</h3>
+  <p>Research pass 2 found something genuinely new: Rule 135 of the Aircraft Rules 1937, plus a DGCA direction, compels every scheduled Indian carrier to publish route-wise tariff sheets. Free, structured, archived. Pass 2 proposed building the index on them. Pass 3 tested that proposal against 14 archived IndiGo sheets and killed it on three independent grounds:</p>
+  <ul class="tight">
+    <li><b>A fare level is a band, not a price.</b> Median Maximum/Minimum ratio 1.25×–1.52×, p90 up to 2.82×, only 0.3–2.5% of cells identical. Any index must pick an arbitrary point inside the band — and the band is <em>narrowing</em> over time, so a midpoint index would read band compression as deflation.</li>
+    <li><b>The levels are not stable strata.</b> Median same-level month-over-month movement runs −21.3% to +10.0%; 12–53% of matched cells move more than ±25%; the best-matching ladder offset is non-zero in 5 of 11 consecutive pairs.</li>
+    <li><b>The route panel churns.</b> 4,110 → 1,919 routes in a single step: 46.6% survival. The schema changed three times in eighteen months.</li>
+  </ul>
+  <p>Pass 3 also ran the compliance check pass 2 never ran, separating robots.txt from terms of use — and four of the five "clean" sources failed the project's own gate.</p>
+
+  <div class="note">
+    <span class="mk">Why this is the strongest part of the submission</span>
+    <p>The research reversed itself twice and recorded both reversals rather than rewriting history. It distinguishes "not found" from "does not exist", marks claims resting on secondary sources as <b>primary source not verified</b>, and keeps <code>robots status</code> and <code>Terms status</code> as separate columns because conflating them changed four verdicts. Judges see a team that tested its own hypothesis and let the data win.</p>
+  </div>
+
+  <h3 class="rule">Two findings that reframe the whole project</h3>
+  <ul class="tight">
+    <li><b>MoSPI already does exactly what AeroDex proposes.</b> The CPI 2024 FAQ (Q27) records that airfares are collected through well-known online platforms. The difference between MoSPI's lawful collection and AeroDex's unlawful collection is <em>statutory authority</em> under the Collection of Statistics Act 2008 — not technique.</li>
+    <li><b>The methodology is independently corroborated.</b> MoSPI's own CPI 2024 series uses Jevons for elementary indices and a Laspeyres-family aggregation above — matching AeroDex's two most important choices. The IMF Technical Assistance mission to MoSPI separately recommended multiple advance-purchase horizons and naming the airline as a price-determining characteristic; the 7-horizon carrier-attributed panel already does both.</li>
+  </ul>
+  <p style="margin-bottom:0">Four passes of adversarial research produced <strong>14 keep, 0 change</strong> against the methodology config. That is a real result, not an absence of one.</p>
+</section>
+
+<!-- ================= 05 ================= -->
+<section id="remaining">
+  <div class="sec-head"><span class="n">05</span><h2>What remains before this is SIH-level</h2></div>
+
+  <p>Split by whether the access question blocks it. Most of the highest-value work does not.</p>
+
+  <h3>Unblocked &mdash; start today</h3>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th class="mid">Work</th><th>Effort</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td class="num">U-1</td><td><b>Hedonic quality adjustment.</b> <code>index/hedonic.py</code> — OLS on log fare over stops, departure bucket, carrier type, duration, refundability, baggage. Config already specifies it and sets <code>enabled: true</code>; no module exists</td><td class="num">2–3 d</td><td>Config currently promises something the code ignores. Matched-model alone cannot handle airline fare-mix churn</td></tr>
+      <tr><td class="num">U-2</td><td><b>eSankhyiki M7 benchmark.</b> Pull the monthly "Air fare (normal): economy class" series via the documented REST API</td><td class="num">1 d</td><td>Free, real, public data in a project that otherwise has none. Prefer the REST API over the third-party PyPI client, which is alpha-status and individually authored</td></tr>
+      <tr><td class="num">U-3</td><td><b>Coverage ratio per stratum + source-plurality metric.</b> Period-level coverage exists; per-stratum publication and any notion of source count do not</td><td class="num">1 d</td><td>The plan promises "redundancy across sources instead of evasion" and a published coverage ratio. The pitch asserts a property the code only half has</td></tr>
+      <tr><td class="num">U-4</td><td><b>Seasonal adjustment.</b> STL for daily/weekly; X-13ARIMA-SEATS for the monthly headline, with STL fallback</td><td class="num">2 d</td><td>X-13 is what national statistical offices actually use — a free credibility upgrade. The binary is x86-only, so budget an ARM fallback and do not burn a week</td></tr>
+      <tr><td class="num">U-5</td><td><b>Chaining and revision policy.</b> Monthly chain-link with annual overlap; 7-day provisional window then frozen, with a published diff on revision</td><td class="num">2 d</td><td>Both are specified in config and in the schema (<code>is_provisional</code>, <code>revision_of</code>); neither is implemented</td></tr>
+      <tr><td class="num">U-6</td><td><b>Write index points to the database</b> and add an <code>aerodex publish</code> command</td><td class="num">1 d</td><td>The <code>index_point</code> table and the artifact builder both exist but are not connected to anything</td></tr>
+      <tr><td class="num">U-7</td><td><b>Dashboard.</b> Next.js static export on Cloudflare Pages, showing the series plus M3 and M5 <em>on the public page</em></td><td class="num">3–4 d</td><td>This is what judges and MoSPI will actually open. A price index that discloses its own coverage and imputation share is doing the thing that separates official statistics from a scraped chart</td></tr>
+      <tr><td class="num">U-8</td><td><b>R2 upload + FastAPI behind a Cloudflare Tunnel</b></td><td class="num">2 d</td><td><code>boto3</code>, <code>fastapi</code> and <code>uvicorn</code> are already declared as dependencies and used nowhere</td></tr>
+      <tr><td class="num">U-9</td><td><b>MkDocs methodology site</b> on GitHub Pages</td><td class="num">1 d</td><td>An open-data project that hides its methodology undermines its own pitch</td></tr>
+      <tr><td class="num">U-10</td><td><b>Sensitivity analysis.</b> Jevons vs Dutot vs Carli, with and without hedonics, on the fixture panel</td><td class="num">1 d</td><td>Phase 5 work that needs no real data. Hand the table to any reviewer who challenges the formula</td></tr>
+      <tr><td class="num">U-11</td><td><b>Fix the README</b> and reconcile <code>plan.md</code> with the S3 findings</td><td class="num">2 h</td><td>Two plan claims are now falsified — see audit A-1 and A-2</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="rule">Blocked on external access</h3>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th class="mid">Work</th><th>Unblocks when</th></tr></thead>
+    <tbody>
+      <tr><td class="num">B-1</td><td><b>Real acquisition adapters.</b> Explicitly marked <em>do not start</em> in the decision record</td><td>Written permission naming a specific source arrives</td></tr>
+      <tr><td class="num">B-2</td><td><b>M2 quote volume</b> and <b>M3 sustained over 7 days</b></td><td>A permitted source exists</td></tr>
+      <tr><td class="num">B-3</td><td><b>Adapter health monitor, canary tests, fallback ladder.</b> <code>acquire/health.py</code> and <code>tests/canary/</code> are both absent or empty</td><td>There is a live source to be healthy about</td></tr>
+      <tr><td class="num">B-4</td><td><b>Spikes S1 and S2</b> — the Oracle VM and Playwright on ARM</td><td>Someone creates an Oracle account. S1 is worth doing anyway: it also settles whether IndiGo's and Air India's robots.txt are reachable from an Indian IP</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="rule">The critical path &mdash; ranked external actions</h3>
+  <div class="strips">
+    <div class="strip s-block"><span class="id">NA-1</span><span class="txt"><b>Write to MoSPI, Prices &amp; Cost of Living Division.</b> Ask whether AeroDex may collect under the Ministry's authority, or receive the airfare data it already gets from DGCA, citing Expert Group recommendation 11(a) as precedent. <b>The only action whose answer changes the project decision.</b> Full draft letter is written and ready in <code>NEXT_ACTIONS.md</code>. Cost: one email. Owner: project lead or faculty mentor — institutional letterhead materially improves the response rate.</span><span class="chip block">send today</span></div>
+    <div class="strip s-block"><span class="id">NA-2</span><span class="txt"><b>Write to DGCA</b> for the route × airline min/max tariff dataset and its field list. Send in parallel, not after. Even a refusal is informative: it tells us whether the government's own holding is bands or offers.</span><span class="chip block">send today</span></div>
+    <div class="strip s-part"><span class="id">NA-5</span><span class="txt"><b>Ask SIH what the Dataset Link is for.</b> PS 26056 lists eSankhyiki, which publishes index <em>outputs</em>, not the fare quotes the statement asks participants to collect. Either it is a validation reference or an unpublished dataset is intended — and that distinction changes the build.</span><span class="chip part">cheap, do it</span></div>
+    <div class="strip s-todo"><span class="id">NA-9</span><span class="txt"><b>Obtain the DGCA direction of 13 May 2025 in original.</b> It is currently sourced secondhand and marked <em>primary source not verified</em>. It must not appear in a submission as fact until the PDF is in hand.</span><span class="chip todo">housekeeping</span></div>
+  </div>
+
+  <div class="note alert">
+    <span class="mk">Time-sensitive</span>
+    <p>The methodology sets <code>base.period: "2026-09"</code> — the index's reference period, where the value is 100 by definition. That period starts in about a week and no real observation exists. If access does not land before then, the base period passes with no data and the index has nothing to chain from. The fix is a one-line config change, but somebody has to decide and it should not be discovered late.</p>
+  </div>
+</section>
+
+<!-- ================= 06 ================= -->
+<section id="map">
+  <div class="sec-head"><span class="n">06</span><h2>Every directory and file, explained</h2></div>
+
+  <h3>Top level</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Path</th><th class="mid">What it is</th><th>Read it when</th></tr></thead>
+    <tbody>
+      <tr><td class="path">plan.md</td><td>The 700-line build plan: every decision recorded as job → options → what killed the alternatives → pick → named fallback. Contains the sizing arithmetic, the free-tier table, the risk register and the phase gates</td><td>Before questioning any architectural choice — it is probably already answered</td></tr>
+      <tr><td class="path">README.md</td><td>How to run what exists today. Currently carries a stale status table</td><td>First contact with the repo</td></tr>
+      <tr><td class="path">pyproject.toml</td><td>Dependencies, ruff and mypy config, the <code>aerodex</code> console script</td><td>Adding a library</td></tr>
+      <tr><td class="path">docker-compose.yml</td><td>Local TimescaleDB on port 5433. Production runs Postgres directly on the VM, not in Docker</td><td>Setting up locally</td></tr>
+      <tr><td class="path">uv.lock</td><td>Locked dependency graph. Never hand-edit</td><td>Never</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="rule"><code>config/</code> &mdash; the auditable methodology</h3>
+  <p>Hashed into every release. Nothing here may move into Python.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Path</th><th>Lines</th><th class="mid">Contents</th></tr></thead>
+    <tbody>
+      <tr><td class="path">methodology.yaml</td><td class="num">91</td><td>Base period and value; Jevons settings with a minimum matched-quote floor and a relative clip band; the hedonic specification; Lowe aggregation and the weight-construction rules; the 5% imputation ceiling; seasonal methods; chaining; the revision policy; validation bounds. Comments explain <em>why</em> each choice beat its alternative</td></tr>
+      <tr><td class="path">panel.yaml</td><td class="num">96</td><td>60 routes with DGCA-derived weights, 7 booking horizons, 3 IST slots, and collection rules. Generated by the S4 script — do not hand-edit, regenerate and bump the mapping revision</td></tr>
+      <tr><td class="path">calendar.yaml</td><td class="num">21</td><td>8 festivals and 3 vacation windows with lead-day markers for the pre-travel booking surge. Hand-maintained, ~30 rows/year, deliberately not over-engineered</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="rule"><code>aerodex/</code> &mdash; the package</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Path</th><th>Lines</th><th class="mid">What it does</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td class="path">config.py</td><td class="num">163</td><td>Loads the three YAMLs into frozen dataclasses and computes the canonical SHA-256 hash of each. Frozen because the engine is pure — a config mutated mid-run would make its own hash a lie</td><td><span class="chip done">done</span></td></tr>
+      <tr><td class="path">compliance.py</td><td class="num">410</td><td>The legal position as executable assertions: rate limiter, RFC 9309 robots parser and cache, no-auth gate, no-personal-data gate, User-Agent, and a redistribution filter. <b>The pitch depends on this file</b></td><td><span class="chip done">done</span></td></tr>
+      <tr><td class="path">cli.py</td><td class="num">263</td><td>Five commands: <code>panel</code>, <code>init-db</code>, <code>collect</code>, <code>index</code>, <code>verify</code>. Notably it <em>refuses</em> to compute a weighted index when weights are missing rather than silently reverting to uniform</td><td><span class="chip part">no publish cmd</span></td></tr>
+      <tr><td class="path">acquire/base.py</td><td class="num">195</td><td>The adapter ABC, the <code>SearchRequest</code> and <code>Quote</code> types, the tier enum, and the compliance hooks every fetch must route through</td><td><span class="chip done">done</span></td></tr>
+      <tr><td class="path">acquire/collect.py</td><td class="num">154</td><td>Builds one slot's request list and runs it, producing a collection report with success rate and quarantine counts. When a source blocks it is dropped, never retried harder</td><td><span class="chip done">done</span></td></tr>
+      <tr><td class="path">acquire/adapters/fixture.py</td><td class="num">107</td><td>The deterministic offline adapter. Not a data source — a test harness that lets the whole pipeline exist before a real source does</td><td><span class="chip part">synthetic</span></td></tr>
+      <tr><td class="path">acquire/health.py</td><td class="num">—</td><td>Planned: canary tests and the fallback ladder</td><td><span class="chip todo">absent</span></td></tr>
+      <tr><td class="path">normalise/normalise.py</td><td class="num">157</td><td>Turns a raw quote into a clean one: departure-time bucketing, carrier-type tagging, and a stable itinerary key. Deduplicates by keeping the <em>lowest</em> all-inclusive fare per itinerary per slot — because that is what a traveller comparing sources would pay</td><td><span class="chip done">done</span></td></tr>
+      <tr><td class="path">validate/rules.py</td><td class="num">72</td><td>Plausibility checks against the config bounds. A failure is <em>quarantined</em>, not deleted — silently dropping bad rows would make the coverage ratio flatter than the collection actually was</td><td><span class="chip done">done</span></td></tr>
+      <tr><td class="path">index/engine.py</td><td class="num">203</td><td>The pure function. Builds strata, splits route weight across horizons, computes per-stratum relatives, imputes, aggregates, chains the level forward, and stamps provenance on every row</td><td><span class="chip done">done</span></td></tr>
+      <tr><td class="path">index/elementary.py</td><td class="num">83</td><td>Matched-model price relatives and the Jevons geometric mean, in log space</td><td><span class="chip done">done</span></td></tr>
+      <tr><td class="path">index/aggregate.py</td><td class="num">60</td><td>Lowe/Laspeyres weighted aggregation, returning both the ratio and the reported weight share that feeds M5</td><td><span class="chip done">done</span></td></tr>
+      <tr><td class="path">index/impute.py</td><td class="num">64</td><td>Group-mean imputation. A stratum with no reporting sibling stays missing — inventing a number from the global mean would hide the coverage failure M5 exists to surface</td><td><span class="chip done">done</span></td></tr>
+      <tr><td class="path">index/hedonic.py</td><td class="num">—</td><td>Planned: OLS quality adjustment. Referenced in config and in a docstring; does not exist</td><td><span class="chip todo">absent</span></td></tr>
+      <tr><td class="path">index/seasonal.py</td><td class="num">—</td><td>Planned: STL and X-13ARIMA-SEATS</td><td><span class="chip todo">absent</span></td></tr>
+      <tr><td class="path">publish/artifacts.py</td><td class="num">131</td><td>Builds the four static artifacts and refuses synthetic-only or ceiling-breaching runs</td><td><span class="chip part">no upload</span></td></tr>
+      <tr><td class="path">db/schema.sql</td><td class="num">213</td><td>Five tables, two hypertables, the append-only triggers, and the queue's dequeue index</td><td><span class="chip done">done</span></td></tr>
+      <tr><td class="path">db/queue.py</td><td class="num">141</td><td>Enqueue and <code>SKIP LOCKED</code> dequeue with retry accounting</td><td><span class="chip done">done</span></td></tr>
+      <tr><td class="path">db/connection.py</td><td class="num">37</td><td>DSN resolution and idempotent schema application. Imported lazily so the engine never needs psycopg</td><td><span class="chip done">done</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="rule"><code>tests/</code> &mdash; 155 tests, 148 passing</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Path</th><th>Tests</th><th class="mid">What it protects</th></tr></thead>
+    <tbody>
+      <tr><td class="path">golden/test_golden.py</td><td class="num">11</td><td><b>The most important file in the repo.</b> Frozen panel in, frozen index out. Also asserts the engine imports no clock, database or network — by parsing its own source</td></tr>
+      <tr><td class="path">golden/panel.csv</td><td class="num">210 rows</td><td>The frozen input: 3 routes, 9 strata, 4 periods, with one deliberate coverage hole</td></tr>
+      <tr><td class="path">golden/expected_hashes.json</td><td class="num">—</td><td>Config, panel, unweighted and weighted output hashes. A diff here means a published number moved</td></tr>
+      <tr><td class="path">unit/test_compliance.py</td><td class="num">62</td><td>Every rule the pitch depends on, including the four robots-parser defects that motivated the custom parser</td></tr>
+      <tr><td class="path">unit/test_dgca_weights.py</td><td class="num">25</td><td>The S4 weight pipeline: city-to-IATA mapping, full-year enforcement, normalisation</td></tr>
+      <tr><td class="path">unit/test_normalise.py</td><td class="num">18</td><td>Bucketing, itinerary keys, the lowest-fare dedup rule</td></tr>
+      <tr><td class="path">unit/test_elementary.py</td><td class="num">12</td><td>Jevons behaviour, clipping, the matched-quote floor</td></tr>
+      <tr><td class="path">unit/test_panel_weights.py</td><td class="num">8</td><td>Weights are complete, sum to 1, and the vintage strings agree across the two config files</td></tr>
+      <tr><td class="path">unit/test_pipeline.py</td><td class="num">7</td><td>End-to-end on the fixture: the index moves, coverage is full, no period is NaN</td></tr>
+      <tr><td class="path">unit/test_publish.py</td><td class="num">5</td><td>The two refusals actually refuse</td></tr>
+      <tr><td class="path">unit/test_queue_integration.py</td><td class="num">7</td><td><span class="chip part">skipped</span> Needs a live Postgres. Run <code>docker compose up -d</code> first</td></tr>
+      <tr><td class="path">canary/</td><td class="num">0</td><td>Empty. Live structural checks per source, once sources exist</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="rule"><code>docs/</code> &mdash; the research record</h3>
+  <p><b>Start at <code>docs/research/s3/S3_EXECUTIVE_SUMMARY.md</code>.</b> Two pages, the whole outcome. <code>docs/spikes/</code> holds the original passes preserved in place with supersession banners — nothing was deleted, so a future team member can see which hypotheses were already falsified and not spend time re-running them.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Path</th><th class="mid">What it answers</th></tr></thead>
+    <tbody>
+      <tr><td class="path">research/s3/S3_EXECUTIVE_SUMMARY.md</td><td>Everything, briefly. Read first</td></tr>
+      <tr><td class="path">research/s3/FINAL_S3_CONCLUSION.md</td><td>The authoritative verdict, sections A–N, and a 14-point self-critique that names the team's own errors</td></tr>
+      <tr><td class="path">research/s3/SOURCE_DECISION_MATRIX.md</td><td>Every source graded GREEN/YELLOW/ORANGE/RED on nine axes, with robots and terms as separate columns</td></tr>
+      <tr><td class="path">research/s3/CLAIM_EVIDENCE_REGISTER.md</td><td>38 claims with evidence, confidence, and an explicit "safe to put in front of judges?" column</td></tr>
+      <tr><td class="path">research/s3/DECISION_RECORD.md</td><td>Eight Yes/No decisions, each with the condition that reopens it</td></tr>
+      <tr><td class="path">research/s3/NEXT_ACTIONS.md</td><td>Ranked actions <b>plus the full draft letter to MoSPI</b>, ready to send</td></tr>
+      <tr><td class="path">research/s3/OPEN_QUESTIONS.md</td><td>Confirmed / Probable / Unresolved / Blocked, with verbatim questions to ask each counterparty</td></tr>
+      <tr><td class="path">research/s3/METHODOLOGY_RECONCILIATION.md</td><td>Every config setting reconciled against the evidence: 14 keep, 0 change, 3 unresolved</td></tr>
+      <tr><td class="path">research/s3/evidence/</td><td>Six files of primary-source extracts, including the full tariff-comparability numbers</td></tr>
+      <tr><td class="path">spikes/robots-parser-defects.md</td><td>The four stdlib defects. Never superseded, still fully valid</td></tr>
+      <tr><td class="path">spikes/s3-evidence.json</td><td>Raw machine-readable capture from pass 1. <b>The fare data in it must not be used</b> — the source's terms prohibit it</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="rule">Supporting directories</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Path</th><th class="mid">Contents</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td class="path">scripts/parse_dgca_weights.py</td><td>418 lines. Downloads the DGCA city-pair CSV via the ODbL-licensed mirror, maps city names to IATA codes, sums bidirectional passengers for the most recent <em>complete</em> calendar year, normalises, and writes weights into <code>panel.yaml</code>. Partial years are refused — they are seasonally skewed and the vintage would still read as annual</td><td><span class="chip done">done</span></td></tr>
+      <tr><td class="path">scripts/make_golden_panel.py</td><td>68 lines. Regenerates the frozen golden panel deterministically. Only run it when the panel <em>schema</em> changes, and expect hashes to move — that is the point</td><td><span class="chip done">done</span></td></tr>
+      <tr><td class="path">deploy/systemd/</td><td>Templated service and timer plus install instructions. The README warns to verify actual fire times in the journal for a week before trusting M3</td><td><span class="chip done">done</span></td></tr>
+      <tr><td class="path">.github/workflows/</td><td>ci, reproducibility, keepalive</td><td><span class="chip part">backup collector missing</span></td></tr>
+      <tr><td class="path">dashboard/</td><td>Empty directory. Next.js static export goes here</td><td><span class="chip todo">empty</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ================= 07 ================= -->
+<section id="concepts">
+  <div class="sec-head"><span class="n">07</span><h2>Concepts and jargon</h2></div>
+  <p>Read this before your first code review. Most of the vocabulary comes from official price statistics, not from software.</p>
+
+  <dl class="gloss">
+    <dt>stratum</dt><dd>One (route, booking horizon) cell — for example DEL–BOM at 7 days out. 60 routes × 7 horizons = <b>420 strata</b>. The index is computed per stratum, then aggregated.</dd>
+    <dt>booking horizon</dt><dd>Days between the collection date and the departure date. Airfares move enormously with horizon, so comparing a 1-day fare to a 60-day fare would measure booking behaviour rather than price change.</dd>
+    <dt>slot</dt><dd>A fixed daily collection window: 07:00, 13:00, 20:00 IST, each with ±15 minutes tolerance. Late collection degrades gracefully instead of voiding the stratum.</dd>
+    <dt>matched model</dt><dd>Only itineraries present in <em>both</em> periods contribute to a price relative. That is what stops a new expensive flight appearing in the panel from reading as inflation — and it is why quality adjustment is needed separately.</dd>
+    <dt>Jevons</dt><dd>The elementary index: the geometric mean of price relatives. Beat Carli (known upward bias) and Dutot (not unit-invariant, wrong for heterogeneous items). MoSPI uses Jevons too.</dd>
+    <dt>Lowe / Laspeyres</dt><dd>The aggregation above strata, using <em>fixed</em> weights from a past period. Fisher and Törnqvist need current-period quantities the project does not have.</dd>
+    <dt>hedonic</dt><dd>Quality adjustment by regression: predict log fare from stops, timing, carrier type, duration, refundability and baggage, so a change in what is being sold is not read as a change in price.</dd>
+    <dt>imputation</dt><dd>Filling a stratum that did not report, using the mean movement of its route group. The <em>share of index weight</em> that was imputed is published on every index point and capped at 5%.</dd>
+    <dt>coverage ratio</dt><dd>The fraction of strata that actually reported. Published on the dashboard, not just internally — disclosing it is what distinguishes official statistics from a scraped chart.</dd>
+    <dt>chaining</dt><dd>Linking successive monthly index levels so the series survives panel churn without a discontinuity.</dd>
+    <dt>weights vintage</dt><dd>A string identifying exactly which weight set produced a number, e.g. <code>dgca-2025-city-pairs-r2</code>. One vintage string must never describe two different weight sets, so the mapping revision is bumped whenever the city-to-IATA table changes.</dd>
+    <dt>config hash</dt><dd>SHA-256 over the canonical serialisation of the methodology. Stamped on every index point, so any published number can be traced to the exact rules that produced it.</dd>
+    <dt>pure function</dt><dd>The engine reads no clock, no database and no network. Enforced by a test that inspects the module's own source. This is what makes reproducibility a property rather than a claim.</dd>
+    <dt>tier 1 / 2 / 3</dt><dd>The acquisition ladder: documented public JSON, then internal XHR endpoint with correct headers, then full browser render. Tier 3 costs 10–50× more CPU, and on 2 OCPU that decides the panel size.</dd>
+    <dt>quarantine</dt><dd>A quote that fails plausibility is held, not deleted. The quarantine queue is evidence about a source's health.</dd>
+    <dt>look-to-book</dt><dd>The economics that block every distribution channel: search costs money, and the cost is recovered from bookings. A project that books nothing is pure cost, so contracts forbid it. This is the structural reason S3 failed.</dd>
+    <dt>Rule 135</dt><dd>Aircraft Rules 1937 — requires carriers to establish and publish tariffs, on a website <em>or</em> in two daily newspapers. The source of the tariff sheets that were investigated and rejected.</dd>
+    <dt>ODbL</dt><dd>The Open Database Licence covering the DGCA traffic mirror the route weights come from. It requires attribution, which the README carries.</dd>
+  </dl>
+</section>
+
+<!-- ================= 08 ================= -->
+<section id="run">
+  <div class="sec-head"><span class="n">08</span><h2>Running it</h2></div>
+
+  <h4>Setup</h4>
+  <pre><span class="p">$</span> uv sync --extra dev
+<span class="p">$</span> docker compose up -d
+<span class="p">$</span> export AERODEX_DSN=postgresql://aerodex:aerodex@localhost:5433/aerodex
+<span class="p">$</span> uv run python -m aerodex.cli init-db</pre>
+
+  <h4>Inspect the panel — no database needed</h4>
+  <pre><span class="p">$</span> uv run python -m aerodex.cli panel
+routes           : 60
+horizons         : [1, 3, 7, 14, 21, 30, 60]
+slots            : ['morning', 'afternoon', 'evening']
+strata           : 420
+stratum-slots/day: 1260
+panel hash       : 945c04f6931c4d42d634c6b86f1274c529a40fe113e40a95f1ecccc6a6bab466
+config hash      : 8eac16ab1440eadd8c29cc1f5a84af267b0a3bfe65f53c55d640b3f43c7261b2
+weights vintage  : dgca-2025-city-pairs-r2
+weight coverage  : 60/60 (sum 1.000000)</pre>
+
+  <h4>Collect a slot and compute an index</h4>
+  <pre><span class="p">$</span> uv run python -m aerodex.cli collect --slot morning --date 2026-09-01 --store
+<span class="p">$</span> uv run python -m aerodex.cli index</pre>
+
+  <h4>Compute from the frozen golden panel instead</h4>
+  <pre><span class="p">$</span> uv run python -m aerodex.cli index --panel-csv tests/golden/panel.csv</pre>
+
+  <h4>The M6 reproducibility check</h4>
+  <pre><span class="p">$</span> uv run python -m aerodex.cli verify</pre>
+
+  <h4>Tests and lint</h4>
+  <pre><span class="p">$</span> uv run pytest -q
+<span class="c">148 passed, 7 skipped</span>
+<span class="p">$</span> uv run ruff check .
+<span class="c">All checks passed!</span></pre>
+
+  <div class="note">
+    <span class="mk">Rule for golden tests</span>
+    <p>If a golden test fails, that is the system working. Never "fix" it by re-freezing. If the change was intentional, re-freeze deliberately and say so in the commit message — a moved hash is a moved published number.</p>
+  </div>
+</section>
+
+<!-- ================= 09 ================= -->
+<section id="audit">
+  <div class="sec-head"><span class="n">09</span><h2>Gap audit</h2></div>
+
+  <p>A file-by-file check of the repository against <code>plan.md</code> and against its own configuration, run while writing this guide. Fifteen discrepancies, ordered by how much they would cost if a judge found them first.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th class="mid">Finding</th><th>Where</th><th>Severity</th></tr></thead>
+    <tbody>
+      <tr><td class="num">A-1</td><td><b>README status table is wrong.</b> It says all four spikes are "not started" and that weights are <code>null</code> placeholders. S4 is complete with all 60 weights populated, and S3 is complete with a documented verdict</td><td class="path">README.md</td><td><span class="chip block">high</span></td></tr>
+      <tr><td class="num">A-2</td><td><b>Two <code>plan.md</code> claims are falsified by the team's own research.</b> §1.1 says scraping "is the only remaining path"; §5.8 endorses Travelpayouts as a cross-check. The research established that scraping is not permitted and that Travelpayouts explicitly prohibits automated price requests. §8's S3 kill condition also counts <em>sources</em> when what matters is <em>permitted observations</em></td><td class="path">plan.md</td><td><span class="chip block">high</span></td></tr>
+      <tr><td class="num">A-3</td><td><b><code>hedonic.enabled: true</code> but no hedonic module exists.</b> The engine never calls one. The config hash therefore certifies a setting the code ignores — which is exactly the class of gap the hashing exists to prevent</td><td class="path">config/methodology.yaml</td><td><span class="chip block">high</span></td></tr>
+      <tr><td class="num">A-4</td><td><b>Placeholder repo URL in the User-Agent.</b> <code>https://github.com/aerodex/aerodex</code> is not the real repository. The plan requires a User-Agent that links to the project; right now it links nowhere</td><td class="path">aerodex/compliance.py</td><td><span class="chip part">medium</span></td></tr>
+      <tr><td class="num">A-5</td><td><b>Seasonal adjustment is configured but not implemented.</b> No STL, no X-13, no module</td><td class="path">index/seasonal.py</td><td><span class="chip part">medium</span></td></tr>
+      <tr><td class="num">A-6</td><td><b>Chaining and the revision policy are configured but not implemented.</b> The engine multiplies ratios sequentially; there is no monthly chain-link, no annual overlap, no 7-day provisional window. The schema has <code>is_provisional</code> and <code>revision_of</code> columns waiting</td><td class="path">index/engine.py</td><td><span class="chip part">medium</span></td></tr>
+      <tr><td class="num">A-7</td><td><b><code>overlap_suppression</code> and <code>slot_tolerance_minutes</code> are configured but not read anywhere.</b> Consequently <code>panel</code> reports 1,260 stratum-slots/day where the plan's arithmetic says ~1,155 — the two numbers in the submission will not match</td><td class="path">aerodex/config.py</td><td><span class="chip part">medium</span></td></tr>
+      <tr><td class="num">A-8</td><td><b>Nothing writes to <code>index_point</code>.</b> The table carries the full provenance design and is unused; the CLI prints to stdout or writes JSON</td><td class="path">aerodex/cli.py</td><td><span class="chip part">medium</span></td></tr>
+      <tr><td class="num">A-9</td><td><b>The publish module is unreachable from the CLI.</b> <code>build_artifacts</code> is exercised only by tests. There is no <code>aerodex publish</code></td><td class="path">publish/artifacts.py</td><td><span class="chip part">medium</span></td></tr>
+      <tr><td class="num">A-10</td><td><b>Five declared dependencies are unused:</b> <code>statsmodels</code>, <code>boto3</code>, <code>fastapi</code>, <code>uvicorn</code>, <code>prometheus-client</code>. They mark planned work, but a reviewer reads them as capability that is not there</td><td class="path">pyproject.toml</td><td><span class="chip todo">low</span></td></tr>
+      <tr><td class="num">A-11</td><td><b>Source plurality is not encoded anywhere.</b> Period-level <code>coverage_ratio</code> does exist in the engine output — the research note calling this entirely absent is now partly out of date — but there is no per-stratum coverage, no source count, and no source dimension in the index output at all</td><td class="path">index/engine.py</td><td><span class="chip part">medium</span></td></tr>
+      <tr><td class="num">A-12</td><td><b>No metrics instrumentation.</b> Plan §9 specifies a Prometheus gauge or counter per metric; none exists. <code>adapter_health</code> is never written</td><td class="path">aerodex/</td><td><span class="chip part">medium</span></td></tr>
+      <tr><td class="num">A-13</td><td><b>Three planned components are absent:</b> <code>acquire/health.py</code>, the <code>backup-collector.yml</code> workflow, and any content in <code>tests/canary/</code> or <code>dashboard/</code></td><td class="path">multiple</td><td><span class="chip todo">expected</span></td></tr>
+      <tr><td class="num">A-14</td><td><b>The base period starts in about a week</b> with no data behind it. Flagged in the research as unresolved and it remains unresolved</td><td class="path">config/methodology.yaml</td><td><span class="chip block">time-sensitive</span></td></tr>
+      <tr><td class="num">A-15</td><td><b>The golden panel is small</b> — 3 routes, 9 strata, 4 periods. Correct for proving determinism, but it does not exercise the engine at 420 strata. A large synthetic panel would catch performance and numerical issues before real data does</td><td class="path">tests/golden/panel.csv</td><td><span class="chip todo">low</span></td></tr>
+    </tbody>
+    <caption>Verified against the working tree at commit 5d39ae1. Nothing here is a test failure — the suite is green; these are gaps between what the project documents and what it executes.</caption>
+  </table></div>
+
+  <div class="note">
+    <span class="mk">The pattern worth noticing</span>
+    <p>Almost every finding is the same shape: <b>configuration or prose promises a behaviour the code does not yet have.</b> This project's own best idea — putting rules in <code>compliance.py</code> so violating one requires editing a file named after the rule — is the cure. Either implement the setting or remove it from the config; a hash over a setting nobody reads is provenance theatre.</p>
+  </div>
+</section>
+
+<!-- ================= 10 ================= -->
+<section id="start">
+  <div class="sec-head"><span class="n">10</span><h2>Where to start</h2></div>
+
+  <h3>Your first hour</h3>
+  <ul class="tight">
+    <li>Read <code>docs/research/s3/S3_EXECUTIVE_SUMMARY.md</code> — two pages, and it explains why the project looks the way it does.</li>
+    <li>Run <code>uv sync --extra dev</code> then <code>uv run pytest -q</code>. Green in under a second.</li>
+    <li>Run <code>aerodex panel</code> and <code>aerodex verify</code>. You have now seen the two things the project guarantees.</li>
+    <li>Open <code>aerodex/index/engine.py</code> and <code>tests/golden/test_golden.py</code> side by side. Everything else in the codebase serves those two files.</li>
+    <li>Skim <code>plan.md</code> §5. Any "why not X?" you have is probably answered there with the constraint that killed X.</li>
+  </ul>
+
+  <h3 class="rule">If you own the project</h3>
+  <p style="margin-bottom:0">Send NA-1 and NA-2 today. The letters are drafted in <code>NEXT_ACTIONS.md</code> and need only an addressee check and a signature; the response window is 2–6 weeks and the SIH timeline does not have slack for a late start. Then decide the base period question (A-14) before September arrives.</p>
+
+  <h3 class="rule">If you write code</h3>
+  <p>Take U-1 (hedonic), U-2 (eSankhyiki benchmark) and U-3 (coverage metric) first. All three are unblocked, all three close a gap between what the project claims and what it does, and all three are visible in the submission. Then U-7, the dashboard — it is the artefact judges will actually open, and it is the one place where publishing M3 and M5 on the public page does real persuasive work in five seconds of attention.</p>
+
+  <h3 class="rule">Three rules the team has already agreed</h3>
+  <ul class="tight">
+    <li><b>Do not write acquisition adapters.</b> Explicitly blocked in the decision record until written permission naming a specific source arrives. A live adapter would create the exact compliance exposure the whole design exists to avoid.</li>
+    <li><b>Do not treat public accessibility as permission.</b> This error was made twice in the research and caught twice. It is why robots status and terms status are separate columns.</li>
+    <li><b>Do not re-freeze a failing golden test to make it pass.</b> If the number moved, find out why.</li>
+  </ul>
+
+  <div class="note">
+    <span class="mk">How to pitch this</span>
+    <p>The instinct will be to hide the missing fare data. Do the opposite. The strongest version of this submission is: <em>we set out to scrape fares, discovered systematically that no one legally can at zero cost, proved it with an experiment that killed our own preferred workaround, built the complete statistical machine anyway to the standard the sponsoring ministry uses — and identified that the ministry itself holds the authority that would unlock it.</em> A team that can show its own falsified hypotheses is more credible than one showing a chart.</p>
+  </div>
+</section>
+
+</main>
+</div>
+
+<footer class="wrap">
+  AeroDex &middot; SIH 2026 PS SIH26056 &middot; guide compiled 23 August 2026 against commit 5d39ae1.
+  Route weights derive from DGCA traffic data via the <span class="mono">Vonter/india-aviation-traffic</span> dataset (ODbL).
+</footer>
