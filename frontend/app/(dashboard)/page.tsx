@@ -1,164 +1,111 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import FlightSearchCard from "@/components/FlightSearchCard";
+import RouteExplorer from "@/components/RouteExplorer";
 import PriceTrackerCard from "@/components/PriceTrackerCard";
-import HotOfferCard from "@/components/HotOfferCard";
+import IndexProvenance from "@/components/IndexProvenance";
 import IndexStats from "@/components/IndexStats";
 import RouteMapSection from "@/components/RouteMapSection";
-
-/* ── Synthetic sparkline data ── */
-const delhiMumbai = [
-  { v: 4800 }, { v: 5100 }, { v: 4650 }, { v: 4400 }, { v: 3950 },
-  { v: 4200 }, { v: 3800 }, { v: 3600 }, { v: 3750 }, { v: 3500 },
-];
-const bangaloreMumbai = [
-  { v: 2800 }, { v: 2600 }, { v: 2750 }, { v: 2900 }, { v: 3100 },
-  { v: 3050 }, { v: 3200 }, { v: 3400 }, { v: 3300 }, { v: 3450 },
-];
-const delhiBlr = [
-  { v: 5200 }, { v: 5100 }, { v: 5080 }, { v: 5120 }, { v: 5060 },
-  { v: 5090 }, { v: 5050 }, { v: 5100 }, { v: 5070 }, { v: 5080 },
-];
-const hyderabadDelhi = [
-  { v: 6200 }, { v: 5900 }, { v: 5600 }, { v: 5800 }, { v: 5400 },
-  { v: 5100 }, { v: 4900 }, { v: 4600 }, { v: 4400 }, { v: 4200 },
-];
-
-const trackers = [
-  {
-    from: "DEL", fromCity: "New Delhi",
-    to:   "BOM", toCity:   "Mumbai",
-    stops: "Direct", price: 3500, currency: "₹",
-    change: "drop" as const, changeAmt: 1300,
-    dates: "Sep 15–22", lastChecked: "2 mins ago",
-    data: delhiMumbai,
-  },
-  {
-    from: "BLR", fromCity: "Bengaluru",
-    to:   "BOM", toCity:   "Mumbai",
-    stops: "1 Stop", price: 3450, currency: "₹",
-    change: "rise" as const, changePct: 8,
-    dates: "Oct 03–10", lastChecked: "5 mins ago",
-    data: bangaloreMumbai,
-  },
-  {
-    from: "DEL", fromCity: "New Delhi",
-    to:   "BLR", toCity:   "Bengaluru",
-    stops: "Direct", price: 5080, currency: "₹",
-    change: "stable" as const,
-    dates: "Sep 20–27", lastChecked: "1 min ago",
-    data: delhiBlr,
-  },
-  {
-    from: "HYD", fromCity: "Hyderabad",
-    to:   "DEL", toCity:   "New Delhi",
-    stops: "Direct", price: 4200, currency: "₹",
-    change: "drop" as const, changeAmt: 2000,
-    dates: "Oct 12–19", lastChecked: "8 mins ago",
-    data: hyderabadDelhi,
-  },
-];
+import DataSourceBanner from "@/components/DataSourceBanner";
+import { ErrorBlock, Skeleton } from "@/components/states";
+import { fetchTrackers, Tracker } from "@/lib/api";
 
 export default function DashboardPage() {
+  const [trackers, setTrackers] = useState<Tracker[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchTrackers(8).then(({ data, error }) => {
+      setTrackers(data);
+      setError(error);
+    });
+  }, []);
+
   return (
-    <div className="pt-8">
-
-      {/* ── Hero section ── */}
-      <div className="mb-6 animate-fade-up">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-1 h-5 rounded-full bg-aero-primary" />
-          <span className="aero-label">Flight Scanner Core</span>
-        </div>
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-aero-dark leading-tight">
-              Global Trajectory<br className="hidden sm:block" /> Analysis
-            </h1>
-            <p className="text-sm text-aero-mid mt-2 max-w-lg">
-              India&apos;s real-time airfare price index — Jevons-Lowe methodology,
-              60-route panel, live scraping. Built for SIH 2026, PS SIH26056 (MoSPI).
-            </p>
-          </div>
-
-          {/* Live indicator */}
-          <div className="flex items-center gap-2 bg-white border border-aero-border rounded-xl px-4 py-2.5 shadow-aero-sm self-start sm:self-auto">
-            <span className="live-dot" />
-            <span className="text-xs font-semibold text-aero-dark">Pipeline Active</span>
-          </div>
-        </div>
+    <div className="pt-6">
+      <div className="animate-fade-up mb-6">
+        <DataSourceBanner />
       </div>
 
-      {/* ── Flight search card ── */}
+      {/* ── Hero ── */}
+      <div className="animate-fade-up mb-6" style={{ animationDelay: "40ms" }}>
+        <div className="mb-2 flex items-center gap-2">
+          <div className="h-5 w-1 rounded-full bg-aero-primary" />
+          <span className="aero-label">Airfare Price Index · India</span>
+        </div>
+        <h1 className="max-w-3xl text-3xl font-bold leading-tight text-aero-dark sm:text-4xl lg:text-5xl">
+          What Indian air travel actually costs
+        </h1>
+        <p className="mt-3 max-w-2xl text-sm text-aero-mid sm:text-base">
+          A reproducible price index over a 60-route domestic panel — Jevons elementary
+          aggregates, DGCA traffic weights, and a published hash for every number.
+          SIH 2026, PS SIH26056 (MoSPI).
+        </p>
+      </div>
+
+      {/* ── Panel query ── */}
       <div className="animate-fade-up" style={{ animationDelay: "80ms" }}>
-        <FlightSearchCard />
+        <RouteExplorer />
       </div>
 
-      {/* ── Stats strip ── */}
-      <div className="mt-8 animate-fade-up" style={{ animationDelay: "150ms" }}>
+      {/* ── Headline stats ── */}
+      <div className="animate-fade-up mt-8" style={{ animationDelay: "150ms" }}>
         <IndexStats />
       </div>
 
-      {/* ── Price trackers + Hot offers ── */}
-      <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-up" style={{ animationDelay: "200ms" }}>
-
-        {/* Active trackers */}
+      {/* ── Movers + provenance ── */}
+      <div
+        className="animate-fade-up mt-10 grid grid-cols-1 gap-6 lg:grid-cols-3"
+        style={{ animationDelay: "200ms" }}
+      >
         <div className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-aero-dark">Active Price Trackers</h2>
-            <button className="flex items-center gap-1.5 text-xs font-semibold text-aero-primary hover:text-aero-primary2 transition-colors duration-150">
-              View All <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-aero-dark">Heaviest corridors</h2>
+              <p className="text-xs text-aero-muted">
+                Ordered by DGCA panel weight — the routes that move the headline most.
+              </p>
+            </div>
+            <Link
+              href="/price-tracking"
+              className="flex shrink-0 items-center gap-1.5 text-xs font-semibold text-aero-primary transition-colors duration-150 hover:text-aero-primary2"
+            >
+              All 60 routes <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {trackers.map((t) => (
-              <PriceTrackerCard key={`${t.from}-${t.to}`} {...t} />
-            ))}
-          </div>
+
+          {error ? (
+            <ErrorBlock error={error} />
+          ) : !trackers ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-52 w-full" />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {trackers.map((t) => (
+                <PriceTrackerCard key={t.id} tracker={t} />
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Hot offers */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-aero-dark">Hot Offers</h2>
-            <button className="text-xs font-semibold text-aero-primary hover:text-aero-primary2 transition-colors duration-150">
-              See all
-            </button>
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-aero-dark">Provenance</h2>
+            <p className="text-xs text-aero-muted">
+              How this number was produced, and how to check it.
+            </p>
           </div>
-          <div className="flex flex-col gap-4">
-            <HotOfferCard
-              tag="Limited"
-              logoText="AI"
-              sponsor="Air India Special"
-              title="Get 25% off all domestic flights"
-              description="Book before midnight — lowest fares on 12 routes."
-              expiresIn="48 hours"
-              gradient="from-aero-primary to-[#1A3FB5]"
-            />
-            <HotOfferCard
-              tag="Flash Sale"
-              logoText="IG"
-              sponsor="IndiGo Weekend"
-              title="Fly for ₹999 on select routes"
-              description="Mumbai · Delhi · Bengaluru corridors only."
-              expiresIn="6 hours"
-              gradient="from-[#0EA5E9] to-aero-sky"
-            />
-            <HotOfferCard
-              tag="Early Bird"
-              logoText="6E"
-              sponsor="SpiceJet Offer"
-              title="Business class at economy prices"
-              expiresIn="3 days"
-              gradient="from-purple-600 to-purple-400"
-            />
-          </div>
+          <IndexProvenance />
         </div>
       </div>
 
-      {/* ── Route mapping ── */}
+      {/* ── Panel map ── */}
       <div className="animate-fade-up" style={{ animationDelay: "280ms" }}>
         <RouteMapSection />
       </div>
-
     </div>
   );
 }

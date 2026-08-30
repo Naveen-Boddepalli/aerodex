@@ -1,135 +1,142 @@
 "use client";
 
 import { TrendingDown, TrendingUp, Minus, ArrowRight, Plane } from "lucide-react";
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  Tooltip,
-} from "recharts";
+import { ResponsiveContainer, AreaChart, Area, Tooltip, YAxis } from "recharts";
+import Link from "next/link";
+import clsx from "clsx";
+import { Tracker, inr } from "@/lib/api";
 
-interface TrackerCardProps {
-  from: string;
-  fromCity: string;
-  to: string;
-  toCity: string;
-  stops: string;
-  price: number;
-  currency?: string;
-  change: "drop" | "rise" | "stable";
-  changePct?: number;
-  changeAmt?: number;
-  dates: string;
-  lastChecked: string;
-  data: { v: number }[];
-}
+/**
+ * One route card. Takes the API's `Tracker` shape directly so the dashboard
+ * does not restate the field list on every use.
+ *
+ * The headline number is the route's *median* fare across all seven booking
+ * horizons, not the cheapest quote — a minimum over 42 quotes moves on noise
+ * alone and would show a "drop" every other day. The cheapest quote is still
+ * shown, labelled as such.
+ */
 
-const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { value: number }[] }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-aero-dark text-white text-xs px-2 py-1 rounded-lg shadow-lg">
-        ₹{payload[0].value.toLocaleString()}
-      </div>
-    );
-  }
-  return null;
+const TONE = {
+  drop: { stroke: "#12B76A", text: "text-green-600" },
+  rise: { stroke: "#F04438", text: "text-red-500" },
+  stable: { stroke: "#6172A0", text: "text-aero-stable" },
+} as const;
+
+const SparkTooltip = ({
+  active, payload,
+}: {
+  active?: boolean;
+  payload?: { value: number; payload: { period: string } }[];
+}) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg bg-aero-dark px-2 py-1 text-xs text-white shadow-lg">
+      <div className="font-semibold">{inr(payload[0].value)}</div>
+      <div className="text-[9px] text-white/60">{payload[0].payload.period}</div>
+    </div>
+  );
 };
 
-export default function PriceTrackerCard({
-  from, fromCity, to, toCity, stops, price, currency = "₹",
-  change, changePct, changeAmt, dates, lastChecked, data,
-}: TrackerCardProps) {
-
-  const strokeColor =
-    change === "drop" ? "#12B76A" :
-    change === "rise" ? "#F04438" :
-    "#6172A0";
+export default function PriceTrackerCard({ tracker }: { tracker: Tracker }) {
+  const t = tracker;
+  const tone = TONE[t.change];
 
   return (
-    <div className="aero-card p-4 hover:shadow-aero-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          {/* Route */}
-          <div className="flex items-center gap-1.5">
-            <div>
-              <div className="text-lg font-bold text-aero-dark leading-none">{from}</div>
-              <div className="text-[10px] text-aero-muted font-medium mt-0.5">{fromCity}</div>
+    <Link
+      href={`/routes/${t.from}/${t.to}`}
+      className="aero-card group block p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-aero-md"
+    >
+      {/* Header: route + change badge */}
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <div>
+            <div className="text-lg font-bold leading-none text-aero-dark">{t.from}</div>
+            <div className="mt-0.5 truncate text-[10px] font-medium text-aero-muted">{t.fromCity}</div>
+          </div>
+          <div className="flex flex-col items-center gap-0.5 px-1">
+            <span className="text-[9px] text-aero-muted">{t.stops}</span>
+            <div className="flex items-center gap-0.5">
+              <div className="h-px w-4 bg-aero-border" />
+              <Plane className="h-3 w-3 rotate-45 text-aero-primary" />
+              <div className="h-px w-4 bg-aero-border" />
             </div>
-            <div className="flex flex-col items-center gap-0.5 px-1">
-              <span className="text-[9px] text-aero-muted">{stops}</span>
-              <div className="flex items-center gap-0.5">
-                <div className="w-4 h-px bg-aero-border" />
-                <Plane className="w-3 h-3 text-aero-primary rotate-45" />
-                <div className="w-4 h-px bg-aero-border" />
-              </div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-aero-dark leading-none">{to}</div>
-              <div className="text-[10px] text-aero-muted font-medium mt-0.5">{toCity}</div>
-            </div>
+          </div>
+          <div>
+            <div className="text-lg font-bold leading-none text-aero-dark">{t.to}</div>
+            <div className="mt-0.5 truncate text-[10px] font-medium text-aero-muted">{t.toCity}</div>
           </div>
         </div>
 
-        {/* Badge */}
-        {change === "drop" && changeAmt && (
-          <span className="aero-badge-drop">
-            <TrendingDown className="w-3 h-3" />
-            ₹{changeAmt} Drop
+        {t.change === "drop" && (
+          <span className="aero-badge-drop shrink-0">
+            <TrendingDown className="h-3 w-3" />
+            {inr(t.changeAmt)}
           </span>
         )}
-        {change === "rise" && changePct && (
-          <span className="aero-badge-rise">
-            <TrendingUp className="w-3 h-3" />
-            +{changePct}%
+        {t.change === "rise" && (
+          <span className="aero-badge-rise shrink-0">
+            <TrendingUp className="h-3 w-3" />
+            +{t.changePct}%
           </span>
         )}
-        {change === "stable" && (
-          <span className="aero-badge-stable">
-            <Minus className="w-3 h-3" />
+        {t.change === "stable" && (
+          <span className="aero-badge-stable shrink-0">
+            <Minus className="h-3 w-3" />
             Stable
           </span>
         )}
       </div>
 
-      {/* Price + meta */}
+      {/* Price block */}
       <div className="mb-3">
-        <div className="text-[10px] font-semibold uppercase tracking-widest text-aero-muted mb-0.5">Current Best</div>
-        <div className="text-2xl font-bold text-aero-dark">
-          {currency}{price.toLocaleString()}
+        <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-widest text-aero-muted">
+          Median fare
         </div>
-        <div className="text-[10px] text-aero-muted mt-0.5">
-          {dates} · Checked {lastChecked}
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-bold text-aero-dark">{inr(t.price)}</span>
+          <span className={clsx("text-xs font-semibold tabular-nums", tone.text)}>
+            {t.change === "stable" ? "±" : t.change === "drop" ? "−" : "+"}
+            {t.changePct}%
+          </span>
+        </div>
+        <div className="mt-0.5 text-[10px] text-aero-muted">
+          Cheapest quote {inr(t.bestPrice)} · {t.volume} quotes · weight{" "}
+          {(t.weight * 100).toFixed(2)}%
         </div>
       </div>
 
       {/* Sparkline */}
-      <div className="h-14 -mx-1">
+      <div className="-mx-1 h-14">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
+          <AreaChart data={t.data} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
             <defs>
-              <linearGradient id={`grad-${from}-${to}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={strokeColor} stopOpacity={0.2} />
-                <stop offset="95%" stopColor={strokeColor} stopOpacity={0} />
+              <linearGradient id={`spark-${t.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={tone.stroke} stopOpacity={0.22} />
+                <stop offset="95%" stopColor={tone.stroke} stopOpacity={0} />
               </linearGradient>
             </defs>
+            {/* Without an explicit domain recharts anchors the axis at 0, which
+                flattens a ₹8,000–9,000 series into a straight line. */}
+            <YAxis hide domain={["dataMin", "dataMax"]} />
             <Area
               type="monotone"
               dataKey="v"
-              stroke={strokeColor}
+              stroke={tone.stroke}
               strokeWidth={1.5}
-              fill={`url(#grad-${from}-${to})`}
-              dot={false}
+              fill={`url(#spark-${t.id})`}
+              dot={false} isAnimationActive={false}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<SparkTooltip />} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
-      {/* View link */}
-      <div className="mt-2 flex items-center gap-1 text-xs font-medium text-aero-primary opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-        View details <ArrowRight className="w-3 h-3" />
+      <div className="mt-2 flex items-center justify-between">
+        <span className="text-[10px] text-aero-muted">{t.updated}</span>
+        <span className="flex items-center gap-1 text-xs font-medium text-aero-primary opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+          Route detail <ArrowRight className="h-3 w-3" />
+        </span>
       </div>
-    </div>
+    </Link>
   );
 }

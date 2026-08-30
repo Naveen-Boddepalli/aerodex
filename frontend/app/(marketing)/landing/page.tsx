@@ -45,7 +45,8 @@ function hexToHsl(hex: string): HSL {
   const g = parseInt(hex.substring(3,5), 16) / 255;
   const b = parseInt(hex.substring(5,7), 16) / 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h = 0, s = 0, l = (max + min) / 2;
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
   if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
@@ -179,19 +180,28 @@ function FlightCanvas() {
    HOOKS
 ════════════════════════════════════════════════════════ */
 function useCountUp(target:number,duration=1600,active=false){
-  const [count,setCount]=useState(0);
+  const [count,setCount]=useState<number|null>(null);
   useEffect(()=>{
     if(!active) return;
+    let raf=0;
     let start:number|null=null;
     const step=(ts:number)=>{
       if(!start) start=ts;
       const prog=Math.min((ts-start)/duration,1);
-      setCount(Math.floor((1-Math.pow(1-prog,3))*target));
-      if(prog<1) requestAnimationFrame(step);
+      if(prog<1){
+        setCount(Math.floor((1-Math.pow(1-prog,3))*target));
+        raf=requestAnimationFrame(step);
+      } else {
+        setCount(target);
+      }
     };
-    requestAnimationFrame(step);
+    raf=requestAnimationFrame(step);
+    return ()=>cancelAnimationFrame(raf);
   },[active,target,duration]);
-  return count;
+  // Until the animation has produced a frame, show the real number. A stalled
+  // rAF — a background tab, a throttled renderer, a missed intersection — must
+  // never leave a "0" standing where a fact belongs.
+  return count ?? target;
 }
 
 function useInView(threshold=0.15){
@@ -264,10 +274,13 @@ export default function LandingPage() {
   const {ref:ftRef,  inView:ftIn } = useInView(0.08);
   const {ref:mvRef,  inView:mvIn } = useInView(0.1);
 
-  const routes  = useCountUp(60,  1500, statsRef.inView);
-  const quotes  = useCountUp(7000,1800, statsRef.inView);
-  const sources = useCountUp(6,   1100, statsRef.inView);
-  const uptime  = useCountUp(99,  1600, statsRef.inView);
+  // Every figure below is either config or a design target, and is labelled as
+  // whichever it is. The README is explicit that S3 has not run and that no
+  // adapter yet touches a real source; the landing page must not imply it has.
+  const routes  = useCountUp(60,   1500, statsRef.inView);   // config/panel.yaml
+  const strata  = useCountUp(1260, 1800, statsRef.inView);   // 60 x 7 horizons x 3 slots
+  const sources = useCountUp(6,    1100, statsRef.inView);   // S3 candidate shortlist
+  const cost    = useCountUp(0,    1000, statsRef.inView);   // plan: permanent free tier
 
   return (
     <div suppressHydrationWarning style={{ backgroundColor:pageBgColor, width:"100%", minHeight:"100vh", overflowX:"hidden" }}>
@@ -341,8 +354,9 @@ export default function LandingPage() {
 
           <p style={{ fontSize:"clamp(0.9rem,2vw,1.0625rem)", color:P.muted,
                       maxWidth:"36rem", margin:"0 auto 2.5rem", lineHeight:1.7 }}>
-            Jevons-Lowe methodology · 60-route domestic panel · Live scraping
-            across 6 sources · ₹0 infrastructure · M6 reproducibility guaranteed.
+            Jevons-Lowe methodology · 60-route domestic panel · compliant
+            collection · ₹0 infrastructure · every published number reproducible
+            from its archived panel.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -439,10 +453,10 @@ export default function LandingPage() {
       <section ref={statsRef.ref} className="w-full" style={{ padding:"clamp(3rem,6vw,4.5rem) clamp(1rem,5vw,3rem)", backgroundColor: isRedMotion ? ZONES[2].hex : "transparent" }}>
         <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4 mb-16">
           {[
-            { value:routes,  suffix:"",  label:"Route Pairs",         sub:"India domestic panel"   },
-            { value:quotes,  suffix:"+", label:"Quotes / Day",        sub:"M2 collection metric"   },
-            { value:sources, suffix:"",  label:"Scraping Sources",    sub:"Tier-2 JSON endpoints"  },
-            { value:uptime,  suffix:"%", label:"Reproducibility",     sub:"M6 guarantee"           },
+            { value:routes,  suffix:"",  label:"Route Pairs",       sub:"India domestic panel"        },
+            { value:strata,  suffix:"",  label:"Stratum-Slots / Day", sub:"60 routes x 7 horizons x 3 slots" },
+            { value:sources, suffix:"",  label:"Candidate Sources", sub:"under S3 feasibility review" },
+            { value:cost,    prefix:"₹", suffix:"",  label:"Recurring Cost",    sub:"permanent free tier only"   },
           ].map((s,i)=>(
             <div key={i} className="aero-card text-center"
               style={{ padding:"clamp(1.25rem,3vw,1.75rem)",
@@ -452,7 +466,7 @@ export default function LandingPage() {
               <div style={{ fontSize:"clamp(1.875rem,4.5vw,2.75rem)", fontWeight:800,
                             letterSpacing:"-0.02em", color:"var(--accent)", marginBottom:"0.25rem" }}
                 className="tabular-nums">
-                {s.value.toLocaleString()}{s.suffix}
+                {"prefix" in s ? s.prefix : ""}{s.value.toLocaleString()}{s.suffix}
               </div>
               <div style={{ fontSize:"0.875rem", fontWeight:600, color:P.text }}>{s.label}</div>
               <div style={{ fontSize:"0.6875rem", color:P.muted, marginTop:"0.2rem" }}>{s.sub}</div>
@@ -513,7 +527,7 @@ export default function LandingPage() {
         <div className="w-full overflow-hidden mb-8" style={{ padding:"20px 0",
           borderTop:`1px solid ${P.border}`, borderBottom:`1px solid ${P.border}`,
           background:"transparent" }}>
-          <div className="ticker-track flex gap-3 w-max px-3" aria-label="Live fare updates">
+          <div className="ticker-track flex gap-3 w-max px-3" aria-label="Illustrative fare movements — sample values, not collected data">
             {[...TICKERS,...TICKERS].map((t,i)=>{
               const isDrop   = t.change==="drop";
               const isRise   = t.change==="rise";
@@ -552,12 +566,17 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 mb-3">
             <div style={{ width:"3px", height:"18px", borderRadius:"9999px", background:"var(--accent)" }} />
             <span style={{ fontSize:"10px", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", color:"var(--accent)" }}>
-              Live Index Sample
+              What the index reports
             </span>
           </div>
-          <h2 style={{ fontSize:"clamp(1.5rem,3.5vw,2.25rem)", fontWeight:800, letterSpacing:"-0.02em", color:P.text, marginBottom:"1.75rem" }}>
-            Today&apos;s Biggest Movers
+          <h2 style={{ fontSize:"clamp(1.5rem,3.5vw,2.25rem)", fontWeight:800, letterSpacing:"-0.02em", color:P.text, marginBottom:"0.5rem" }}>
+            Biggest movers, by corridor
           </h2>
+          <p style={{ fontSize:"0.8125rem", color:P.muted, marginBottom:"1.75rem", maxWidth:"38rem" }}>
+            Sample values, shown to illustrate the format. Live figures — and the panel
+            they come from — are on the{" "}
+            <Link href="/" style={{ color:"var(--accent)", fontWeight:600 }}>dashboard</Link>.
+          </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[

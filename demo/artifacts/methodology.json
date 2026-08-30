@@ -1,0 +1,79 @@
+{
+  "aggregation": "lowe",
+  "config": {
+    "aggregation": {
+      "formula": "lowe",
+      "renormalise_on_missing": true,
+      "weight_source": "dgca_traffic",
+      "weights_vintage": "dgca-2025-city-pairs-r2"
+    },
+    "base": {
+      "period": "2026-09",
+      "value": 100.0
+    },
+    "chaining": {
+      "frequency": "monthly",
+      "link": "annual_overlap"
+    },
+    "config_schema": 1,
+    "elementary": {
+      "formula": "jevons",
+      "min_matched_quotes": 3,
+      "relative_clip": [
+        0.2,
+        5.0
+      ]
+    },
+    "hedonic": {
+      "characteristics": [
+        "stops",
+        "departure_time_bucket",
+        "carrier_type",
+        "duration_minutes",
+        "is_refundable",
+        "baggage_included"
+      ],
+      "enabled": true,
+      "fallback": "matched_model",
+      "min_observations": 200,
+      "model": "ols_log_fare"
+    },
+    "imputation": {
+      "max_weight_share": 0.05,
+      "method": "stratum_group_mean",
+      "publish_share": true
+    },
+    "revision": {
+      "policy": "Provisional for 7 days; revised once on day 7; frozen thereafter. Every revision publishes a diff against the superseded value.",
+      "provisional_days": 7
+    },
+    "seasonal": {
+      "daily": {
+        "method": "stl",
+        "period": 7,
+        "robust": true
+      },
+      "monthly": {
+        "fallback": "stl",
+        "method": "x13"
+      },
+      "weekly": {
+        "method": "stl",
+        "period": 52,
+        "robust": true
+      }
+    },
+    "validation": {
+      "fare_max_inr": 200000,
+      "fare_min_inr": 800,
+      "max_duration_minutes": 900,
+      "require_all_inclusive": true
+    },
+    "version": 1
+  },
+  "config_hash": "8eac16ab1440eadd8c29cc1f5a84af267b0a3bfe65f53c55d640b3f43c7261b2",
+  "elementary_formula": "jevons",
+  "imputation_ceiling": 0.05,
+  "revision_policy": "Provisional for 7 days; revised once on day 7; frozen thereafter. Every revision publishes a diff against the superseded value.",
+  "weights_vintage": "dgca-2025-city-pairs-r2"
+}

@@ -25,13 +25,51 @@ frontend/app/
 │       └── page.tsx            # Animated Landing Page (custom top bar & footer)
 ├── (dashboard)/                # Route Group: Application shell
 │   ├── layout.tsx              # Global Shell: Navbar + Container + Footer
-│   ├── page.tsx                # Main Dashboard (Flight Scanner & Index Stats)
+│   ├── page.tsx                # Main Dashboard (panel query, stats, provenance, map)
 │   ├── price-tracking/         # 60-Route Filterable Table & Sparklines
-│   ├── alerts/                 # Price Alert Monitor & Target Thresholds
-│   └── history/                # Historical Index Analytics
+│   ├── alerts/                 # Threshold crossings derived from the panel
+│   ├── history/                # Index series + corridor fare series
+│   └── routes/[origin]/[destination]/   # One route in depth
 ├── globals.css                 # Custom CSS tokens & Tailwind v4 theme setup
 └── layout.tsx                  # Bare Root HTML Shell (fonts, dark mode roots)
+
+frontend/lib/api.ts             # The ONLY place the frontend talks HTTP
+frontend/components/            # DataSourceBanner, RouteExplorer, IndexProvenance, …
 ```
+
+---
+
+## 🔌 Data — where every number on screen comes from
+
+Nothing in the dashboard is hard-coded. Every figure is fetched from the
+FastAPI service in `aerodex/api.py` through `lib/api.ts`, which is the single
+place the frontend performs HTTP.
+
+Requests go to same-origin `/api/*`; `next.config.ts` rewrites them to the API,
+so the browser never makes a cross-origin request in development. Override the
+upstream with `AERODEX_API_ORIGIN`, or bypass the proxy entirely with
+`NEXT_PUBLIC_API_URL`.
+
+```bash
+# from the repo root — starts the API and this dashboard together
+./scripts/run_demo.sh
+```
+
+Every fetcher returns `{ data, error }` rather than throwing, so a panel that
+cannot reach the API says so **in place** instead of spinning forever or
+drawing an empty chart that looks like a real flat line.
+
+### Synthetic-data honesty
+
+The API reports `data_source` on every response: `database` for collected
+quotes, `demo-synthetic` for the frozen fixture run in `demo/`. When it is
+synthetic, `DataSourceBanner` renders a persistent strip on every page saying
+so. It collapses; it does not dismiss.
+
+This is not decoration. The project's publisher refuses to release fixture data
+as a measurement, and the dashboard must hold the same line — a chart drawn
+from `demo/` is a demonstration of the format, not a statement about Indian
+airfares.
 
 ---
 

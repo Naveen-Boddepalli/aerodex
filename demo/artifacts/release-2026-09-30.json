@@ -1,0 +1,15 @@
+{
+  "base_period": "2026-09",
+  "base_value": 100.0,
+  "config_hash": "8eac16ab1440eadd8c29cc1f5a84af267b0a3bfe65f53c55d640b3f43c7261b2",
+  "coverage_ratio": 1.0,
+  "imputed_weight_share": 0.0,
+  "index": "AeroDex Airfare Price Index (India)",
+  "is_provisional": true,
+  "n_quotes": 2520,
+  "output_hash": "591042755e751f87e7bf943e03a619c579dca880fe0e52bb11fa7cc374240fee",
+  "panel_hash": "6bbc6d452d477a9cb7c0a6723168d2841b468710929af3a55b8a22c94d2769b6",
+  "period": "2026-09-30",
+  "value": 107.4366,
+  "weights_vintage": "dgca-2025-city-pairs-r2"
+}
