@@ -52,7 +52,7 @@ AIRPORTS: dict[str, Airport] = {
 CARRIERS: dict[str, str] = {
     "6E": "IndiGo",
     "AI": "Air India",
-    "UK": "Vistara",
+    "IX": "Air India Express",
     "SG": "SpiceJet",
     "QP": "Akasa Air",
 }

@@ -1,13 +1,29 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
+/**
+ * Self-hosted at build time by `next/font`, so rendering the dashboard makes no
+ * request to Google. The demo is meant to run on a laptop with no network; a
+ * webfont fetched from a CDN is exactly the dependency that breaks in a hall
+ * with bad wifi, and it takes the typography down with it.
+ *
+ * Inter is a variable font, so one axis covers every weight the design uses.
+ */
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
+
 export const metadata: Metadata = {
-  title: "Aerodex — Real-Time Airfare Price Index for India",
+  title: "AeroDex — Airfare Price Index for India",
   description:
-    "Aerodex tracks real-time airfare pricing across India's domestic routes. Powered by live scraping, the Jevons-Lowe index engine, and a 60-route O–D panel — SIH 2026, PS SIH26056.",
+    "AeroDex publishes a reproducible airfare price index over a 60-route Indian domestic panel — Jevons elementary aggregates under a Lowe index, DGCA traffic weights, and a published hash for every number. SIH 2026, PS SIH26056 (MoSPI).",
   openGraph: {
-    title: "Aerodex — Airfare Price Index",
-    description: "Real-time airfare price index for India. SIH 2026.",
+    title: "AeroDex — Airfare Price Index",
+    description:
+      "A reproducible airfare price index for India, published with the hashes needed to recompute it. SIH 2026, PS SIH26056 (MoSPI).",
     type: "website",
   },
 };
@@ -20,18 +36,8 @@ export const metadata: Metadata = {
  */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="antialiased" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-        {children}
-      </body>
+    <html lang="en" className={inter.variable} suppressHydrationWarning data-scroll-behavior="smooth">
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

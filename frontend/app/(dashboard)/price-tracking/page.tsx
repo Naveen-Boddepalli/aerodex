@@ -79,7 +79,7 @@ function ChangeBadge({ t }: { t: Tracker }) {
     return (
       <span className="aero-badge-drop">
         <TrendingDown className="h-3 w-3" />
-        {inr(t.changeAmt)} · {t.changePct}%
+        −{inr(t.changeAmt)} · −{t.changePct}%
       </span>
     );
   if (t.change === "rise")

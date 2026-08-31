@@ -27,8 +27,11 @@ export interface Result<T> {
   error: string | null;
 }
 
+// Deliberately no port: the demo runs on whatever API_PORT/WEB_PORT are set to,
+// so naming one here is wrong as often as it is right. run_demo.sh starts both
+// halves on matching ports and prints them.
 const API_DOWN =
-  "Cannot reach the AeroDex API. Start it with: uv run uvicorn aerodex.api:app --port 8000";
+  "Cannot reach the AeroDex API. Start it alongside this dashboard with ./scripts/run_demo.sh";
 
 async function get<T>(path: string): Promise<Result<T>> {
   try {

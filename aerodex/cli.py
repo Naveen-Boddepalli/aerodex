@@ -4,6 +4,7 @@
     aerodex panel            show the panel's shape and sizing
     aerodex collect          run one slot's collection
     aerodex index            compute the index from the database
+    aerodex index --publish  compute, then have the publisher accept or refuse it
     aerodex verify           re-run a stored index and diff the hash (M6)
 """
 
@@ -185,7 +186,49 @@ def _cmd_index(args) -> int:
     if args.out:
         out.to_json(args.out, orient="records", indent=2)
         print(f"wrote {args.out}")
+
+    if args.publish:
+        return _publish(out, meth, args)
     return 1 if breached else 0
+
+
+def _publish(index_df, meth: MethodologyConfig, args) -> int:
+    """Run a computed index through the publisher and report the verdict.
+
+    Split out of ``_cmd_index`` so the refusal is the *last* thing on screen.
+    The M5 warning above scrolls off the top of a 30-period table, which is how
+    a refusal ends up looking like a footnote — the one thing the plan says it
+    must never be.
+    """
+    from aerodex.publish.artifacts import (
+        PublicationRefused,
+        build_artifacts,
+        write_artifacts,
+    )
+
+    sources = set(args.sources) if args.sources else None
+    try:
+        artifacts = build_artifacts(
+            index_df, meth, sources=sources, allow_synthetic=args.allow_synthetic
+        )
+    except PublicationRefused as exc:
+        # The verdict goes to stdout like verify's, not stderr: a refusal is the
+        # designed outcome of this command, not a malfunction, and stderr is
+        # unbuffered so it would jump ahead of the table when piped. Exit 3
+        # carries the failure for anything scripting this.
+        print("\nPUBLICATION REFUSED")
+        print(f"  {exc}")
+        print("\nNo artifacts were written.")
+        return 3
+
+    print(f"\nPUBLISHED  {artifacts.release_name}")
+    if args.artifacts_dir:
+        written = write_artifacts(artifacts, args.artifacts_dir)
+        for path in sorted(written):
+            print(f"  wrote {path}")
+    else:
+        print("  (dry run — pass --artifacts-dir to write the files)")
+    return 0
 
 
 def _cmd_verify(args) -> int:
@@ -248,6 +291,17 @@ def main(argv: list[str] | None = None) -> int:
     i.add_argument("--out", help="write the index as JSON")
     i.add_argument("--allow-unweighted", action="store_true",
                    help="compute with uniform weights when panel weights are missing")
+    i.add_argument("--publish", action="store_true",
+                   help="run the result through the publisher; it refuses rather than "
+                        "emitting an unpublishable release (exit 3)")
+    i.add_argument("--source", action="append", dest="sources", metavar="NAME",
+                   help="declare a panel source for the publisher's synthetic check "
+                        "(repeatable, e.g. --source fixture)")
+    i.add_argument("--allow-synthetic", action="store_true",
+                   help="let a fixture-derived panel past the synthetic refusal — for "
+                        "demos only, never a real release")
+    i.add_argument("--artifacts-dir",
+                   help="write the release here when the publisher accepts it")
     i.set_defaults(fn=_cmd_index)
 
     v = sub.add_parser("verify", help="M6 reproducibility check")

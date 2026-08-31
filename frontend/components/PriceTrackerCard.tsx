@@ -70,7 +70,7 @@ export default function PriceTrackerCard({ tracker }: { tracker: Tracker }) {
         {t.change === "drop" && (
           <span className="aero-badge-drop shrink-0">
             <TrendingDown className="h-3 w-3" />
-            {inr(t.changeAmt)}
+            −{t.changePct}%
           </span>
         )}
         {t.change === "rise" && (

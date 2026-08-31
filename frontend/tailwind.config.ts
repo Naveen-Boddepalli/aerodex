@@ -28,7 +28,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
       backgroundImage: {
         "aero-gradient": "linear-gradient(135deg, #2456E8 0%, #38B6FF 100%)",

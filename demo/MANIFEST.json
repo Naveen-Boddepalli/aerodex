@@ -7,7 +7,7 @@
       "2026-09-24"
     ],
     "max_imputed_weight_share": 0.119283,
-    "output_hash": "601af6fdd6f8131689540e370d8ec474337e5c3da951f49910138adc7aa75603",
+    "output_hash": "1e9a7a9e16bebfff94e9c81645ce15a38b040fdd9f82ed71abefc193bbc84b60",
     "refusal": "imputed weight share exceeded 5% (M5) for period(s): 2026-09-21, 2026-09-22, 2026-09-23, 2026-09-24. Publish the coverage failure, not a prettier number.",
     "rows": 75330
   },
@@ -364,11 +364,11 @@
   "files": {
     "artifacts/index_full.csv": {
       "bytes": 7236,
-      "sha256": "4543f93da7dbf8af4480d004c38312bb80cba42b87f78d552220082aceb3aa37"
+      "sha256": "752f7cda3447479f5b55a8eac481a09f6eee4707e462d65e73560363841116e9"
     },
     "artifacts/index_latest.json": {
       "bytes": 555,
-      "sha256": "b680b2bf80030fb606d5c2ac9d236a6439f627fdc908d462ddf989928bdeb3c2"
+      "sha256": "74e899ce107941ef96f6b084698318a1ade605f81f9ffea06479db5872432ee9"
     },
     "artifacts/methodology.json": {
       "bytes": 2024,
@@ -376,31 +376,31 @@
     },
     "artifacts/release-2026-09-30.json": {
       "bytes": 555,
-      "sha256": "b680b2bf80030fb606d5c2ac9d236a6439f627fdc908d462ddf989928bdeb3c2"
+      "sha256": "74e899ce107941ef96f6b084698318a1ade605f81f9ffea06479db5872432ee9"
     },
     "breach/index.csv": {
       "bytes": 7196,
-      "sha256": "948fd3a5d7a0129db317d8723bdc222a1c8ca64377c7c1f3e6b2264c00f85f18"
+      "sha256": "f101f4c3631219336606f602973bb44296a57bca5532bc0f26e47209b48bd467"
     },
     "breach/panel.csv.gz": {
-      "bytes": 1010067,
-      "sha256": "a8b0c25ec76f8f07d39372a78032667b93f6c22bdf13a536f04681ffc95c265d"
+      "bytes": 1010957,
+      "sha256": "a5f27cea21d0f8a339a1ee54a9ede69931e73fa479defe2e3330ccd294f21f3b"
     },
     "expected_hashes.json": {
       "bytes": 399,
-      "sha256": "3456d9a9ed334a4545cd6edaab1e8a8148168938cc0d7c7e8959c7f835e9f465"
+      "sha256": "770b68a29637ffefe5f5943981423065321826b06f32b887c3df48b4c454a765"
     },
     "index.csv": {
       "bytes": 7236,
-      "sha256": "4543f93da7dbf8af4480d004c38312bb80cba42b87f78d552220082aceb3aa37"
+      "sha256": "752f7cda3447479f5b55a8eac481a09f6eee4707e462d65e73560363841116e9"
     },
     "index.json": {
       "bytes": 14608,
-      "sha256": "bacc2c64e0bc6ff055ebd6d69da1bdb836ff232c31f6789dde8549893edca7fc"
+      "sha256": "2a9d20580bf2253185085cc08d4962d8435f79663ca737fe1f25bbe359f0ea7a"
     },
     "panel.csv.gz": {
-      "bytes": 1012975,
-      "sha256": "da47b2d57ad7015b7373a07fdb2fbc28bbe5ba6a093a2a4edfb9ff8fe06188d7"
+      "bytes": 1013829,
+      "sha256": "fbc6e642d8fed4380b34022c0e7234d67c2924cf457b5377b1d966725a0fba9c"
     }
   },
   "generated_by": "scripts/make_demo_data.py",
@@ -427,7 +427,7 @@
     "max_value": 109.784367,
     "min_coverage_ratio": 0.995238,
     "min_value": 97.443207,
-    "output_hash": "591042755e751f87e7bf943e03a619c579dca880fe0e52bb11fa7cc374240fee"
+    "output_hash": "c3523b87decc713ac2a9983379a7350831905c6374efc8917d5f21192938ba27"
   },
   "panel": {
     "coverage_hole": {
@@ -443,7 +443,7 @@
       ],
       "route": "BLR-CCU"
     },
-    "panel_hash": "6bbc6d452d477a9cb7c0a6723168d2841b468710929af3a55b8a22c94d2769b6",
+    "panel_hash": "936772da10b889fe73dc40b6766ffacac2092eb6f5f42dbb20185b8efd45e839",
     "periods": 30,
     "rows": 75552
   },

@@ -17,7 +17,10 @@ from typing import Any
 
 from aerodex.acquire.base import Adapter, Quote, SearchRequest, Tier
 
-CARRIERS = [("6E", "low_cost"), ("AI", "full_service"), ("UK", "full_service"),
+# Carriers operating Indian domestic schedules. UK (Vistara) was retired into
+# AI when the two merged in 2024, so it is not a designator a 2026 panel
+# could observe; IX (Air India Express) is.
+CARRIERS = [("6E", "low_cost"), ("AI", "full_service"), ("IX", "low_cost"),
             ("SG", "low_cost"), ("QP", "low_cost")]
 
 

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   ArrowRight, ChevronDown, Plane, TrendingDown, TrendingUp,
-  Minus, Shield, BarChart2, RefreshCw, Globe, Zap, Activity,
+  Minus, Shield, BarChart2, RefreshCw, Globe, Zap, Activity, FlaskConical,
 } from "lucide-react";
 
 /* ════════════════════════════════════════════════════════
@@ -123,6 +123,10 @@ function FlightCanvas() {
       ctx.setTransform(dpr,0,0,dpr,0,0);
     };
     resize(); window.addEventListener("resize",resize);
+    // next/font emits a hashed family name behind --font-inter, so the canvas
+    // has to read it rather than naming "Inter" and silently falling back.
+    const labelFont = getComputedStyle(document.documentElement)
+      .getPropertyValue("--font-inter").trim() || "system-ui";
     for(let i=0;i<5;i++) spawn();
     const draw = () => {
       const W=canvas.offsetWidth, H=canvas.offsetHeight;
@@ -143,7 +147,7 @@ function FlightCanvas() {
         ctx.fillStyle="rgba(61,90,254,0.07)"; ctx.fill();
         ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2);
         ctx.fillStyle="rgba(15,23,42,0.55)"; ctx.fill();
-        ctx.font="600 7.5px 'Inter',sans-serif";
+        ctx.font=`600 7.5px ${labelFont},sans-serif`;
         ctx.fillStyle="rgba(100,116,139,0.7)"; ctx.textAlign="center";
         ctx.fillText(ap.code,x,y-8);
       });
@@ -204,6 +208,26 @@ function useCountUp(target:number,duration=1600,active=false){
   return count ?? target;
 }
 
+/* `prefers-reduced-motion` is an external store, not React state — subscribing
+   to it keeps the setting live (a viewer flipping it mid-demo is honoured) and
+   avoids a setState in an effect body. The server snapshot is `false`, matching
+   the prerendered HTML, so hydration sees no mismatch. */
+const REDUCED_MOTION = "(prefers-reduced-motion:reduce)";
+
+function subscribeReducedMotion(onChange:()=>void){
+  const mq = window.matchMedia(REDUCED_MOTION);
+  mq.addEventListener("change", onChange);
+  return ()=>mq.removeEventListener("change", onChange);
+}
+
+function useReducedMotion(){
+  return useSyncExternalStore(
+    subscribeReducedMotion,
+    ()=>window.matchMedia(REDUCED_MOTION).matches,
+    ()=>false,
+  );
+}
+
 function useInView(threshold=0.15){
   const ref=useRef<HTMLDivElement>(null);
   const [inView,setInView]=useState(false);
@@ -238,15 +262,13 @@ const TICKERS = [
 export default function LandingPage() {
   const [bgHsl, setBgHsl] = useState<HSL>(ZONES[0].hsl);
   const [scrolled,setScrolled] = useState(false);
-  const [isRedMotion, setIsRedMotion] = useState(false);
+  const isRedMotion = useReducedMotion();
 
   useEffect(()=>{
-    const rm = window.matchMedia("(prefers-reduced-motion:reduce)").matches;
-    setIsRedMotion(rm);
     const onScroll = ()=>{
       const top = window.scrollY;
       const max = document.documentElement.scrollHeight - window.innerHeight;
-      if (!rm) {
+      if (!isRedMotion) {
         setBgHsl(interpolateZone(max>0?top/max:0));
       }
       setScrolled(top>28);
@@ -254,7 +276,7 @@ export default function LandingPage() {
     onScroll();
     window.addEventListener("scroll",onScroll,{passive:true});
     return ()=>window.removeEventListener("scroll",onScroll);
-  },[]);
+  },[isRedMotion]);
 
   // If reduced motion is on, the page wrapper is transparent and sections provide their own bg.
   // Otherwise, the page wrapper provides the interpolated bg and sections are transparent.
@@ -269,7 +291,7 @@ export default function LandingPage() {
     : "border-b border-transparent";
 
   /* In-view */
-  const statsRef                   = useInView(0.2);
+  const {ref:statsRef, inView:statsIn} = useInView(0.2);
   const {ref:howRef, inView:howIn} = useInView(0.08);
   const {ref:ftRef,  inView:ftIn } = useInView(0.08);
   const {ref:mvRef,  inView:mvIn } = useInView(0.1);
@@ -277,10 +299,10 @@ export default function LandingPage() {
   // Every figure below is either config or a design target, and is labelled as
   // whichever it is. The README is explicit that S3 has not run and that no
   // adapter yet touches a real source; the landing page must not imply it has.
-  const routes  = useCountUp(60,   1500, statsRef.inView);   // config/panel.yaml
-  const strata  = useCountUp(1260, 1800, statsRef.inView);   // 60 x 7 horizons x 3 slots
-  const sources = useCountUp(6,    1100, statsRef.inView);   // S3 candidate shortlist
-  const cost    = useCountUp(0,    1000, statsRef.inView);   // plan: permanent free tier
+  const routes  = useCountUp(60,   1500, statsIn);   // config/panel.yaml
+  const strata  = useCountUp(1260, 1800, statsIn);   // 60 x 7 horizons x 3 slots
+  const sources = useCountUp(6,    1100, statsIn);   // S3 candidate shortlist
+  const cost    = useCountUp(0,    1000, statsIn);   // plan: permanent free tier
 
   return (
     <div suppressHydrationWarning style={{ backgroundColor:pageBgColor, width:"100%", minHeight:"100vh", overflowX:"hidden" }}>
@@ -340,7 +362,6 @@ export default function LandingPage() {
 
           <div className="inline-flex items-center gap-2 mb-7 px-4 py-1.5 rounded-full text-xs font-semibold"
             style={{ background:P.accentBg, color:"var(--accent)", border:`1px solid ${P.border}` }}>
-            <span className="live-dot" />
             SIH 2026 · PS SIH26056 · MoSPI
           </div>
 
@@ -363,7 +384,7 @@ export default function LandingPage() {
             <Link href="/"
               className="flex items-center gap-2 font-semibold text-white rounded-xl transition-all duration-150 hover:opacity-90 hover:-translate-y-px"
               style={{ padding:"0.875rem 1.75rem", fontSize:"0.9375rem", background:"var(--accent)", boxShadow:P.shadowMd }}>
-              <BarChart2 className="w-4 h-4" /> View Live Dashboard
+              <BarChart2 className="w-4 h-4" /> View Dashboard
             </Link>
             <Link href="/price-tracking"
               className="flex items-center gap-2 font-semibold rounded-xl transition-all duration-150 hover:-translate-y-px"
@@ -408,7 +429,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               { num:"01", icon:<Globe className="w-5 h-5" />, title:"Collect", delay:0,
-                desc:"1,155 stratum-slots/day across 60 routes, 7 booking horizons, 3 IST windows. Tier-2 JSON endpoints first — Playwright only when tiers 1 & 2 fail." },
+                desc:"1,260 stratum-slots/day across 60 routes, 7 booking horizons, 3 IST windows. Tier-2 JSON endpoints first — Playwright only when tiers 1 & 2 fail." },
               { num:"02", icon:<Activity className="w-5 h-5" />, title:"Index", delay:110,
                 desc:"Jevons elementary aggregation weighted by DGCA traffic data. compute_index() is a pure function — no clock, no network, no database." },
               { num:"03", icon:<Zap className="w-5 h-5" />, title:"Publish", delay:220,
@@ -450,7 +471,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── STATS / WHY AERODEX ─────────────────────────────── */}
-      <section ref={statsRef.ref} className="w-full" style={{ padding:"clamp(3rem,6vw,4.5rem) clamp(1rem,5vw,3rem)", backgroundColor: isRedMotion ? ZONES[2].hex : "transparent" }}>
+      <section ref={statsRef} className="w-full" style={{ padding:"clamp(3rem,6vw,4.5rem) clamp(1rem,5vw,3rem)", backgroundColor: isRedMotion ? ZONES[2].hex : "transparent" }}>
         <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4 mb-16">
           {[
             { value:routes,  suffix:"",  label:"Route Pairs",       sub:"India domestic panel"        },
@@ -460,8 +481,8 @@ export default function LandingPage() {
           ].map((s,i)=>(
             <div key={i} className="aero-card text-center"
               style={{ padding:"clamp(1.25rem,3vw,1.75rem)",
-                       opacity:statsRef.inView?1:0,
-                       transform:statsRef.inView?"translateY(0)":"translateY(18px)",
+                       opacity:statsIn?1:0,
+                       transform:statsIn?"translateY(0)":"translateY(18px)",
                        transition:`opacity 0.5s ease ${i*80}ms,transform 0.5s ease ${i*80}ms` }}>
               <div style={{ fontSize:"clamp(1.875rem,4.5vw,2.75rem)", fontWeight:800,
                             letterSpacing:"-0.02em", color:"var(--accent)", marginBottom:"0.25rem" }}
@@ -498,7 +519,7 @@ export default function LandingPage() {
             ].map(f=>(
               <div key={f.title} className="aero-card"
                 style={{ padding:"clamp(1.5rem,3vw,1.75rem)",
-                         opacity:(ftIn||statsRef.inView)?1:0, transform:(ftIn||statsRef.inView)?"translateY(0)":"translateY(22px)",
+                         opacity:(ftIn||statsIn)?1:0, transform:(ftIn||statsIn)?"translateY(0)":"translateY(22px)",
                          transition:`opacity 0.55s ease ${f.delay}ms,transform 0.55s ease ${f.delay}ms` }}>
                 <div className="flex items-start justify-between mb-5">
                   <div style={{ width:"40px", height:"40px", borderRadius:"10px", flexShrink:0,
@@ -524,6 +545,12 @@ export default function LandingPage() {
       {/* ── TICKER / TODAY'S MOVERS ────────────────────────────── */}
       <section ref={mvRef} className="w-full" style={{ padding:"clamp(3rem,6vw,4.5rem) 0", backgroundColor: isRedMotion ? ZONES[5].hex : "transparent" }}>
         
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-3">
+          <span style={{ fontSize:"10px", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", color:P.muted }}>
+            Illustrative format · sample values, not collected data
+          </span>
+        </div>
+
         <div className="w-full overflow-hidden mb-8" style={{ padding:"20px 0",
           borderTop:`1px solid ${P.border}`, borderBottom:`1px solid ${P.border}`,
           background:"transparent" }}>
@@ -573,8 +600,8 @@ export default function LandingPage() {
             Biggest movers, by corridor
           </h2>
           <p style={{ fontSize:"0.8125rem", color:P.muted, marginBottom:"1.75rem", maxWidth:"38rem" }}>
-            Sample values, shown to illustrate the format. Live figures — and the panel
-            they come from — are on the{" "}
+            Sample values, shown to illustrate the format. The published figures — and the
+            panel they come from, with its provenance labelled — are on the{" "}
             <Link href="/" style={{ color:"var(--accent)", fontWeight:600 }}>dashboard</Link>.
           </p>
 
@@ -625,7 +652,7 @@ export default function LandingPage() {
                     {c.price}
                   </div>
                   <div style={{ fontSize:"10px", color:P.muted, marginTop:"2px" }}>
-                    Was {c.prev} · Updated just now
+                    Was {c.prev} · sample figure, not a measurement
                   </div>
                 </div>
               );
@@ -638,8 +665,8 @@ export default function LandingPage() {
       <footer className="w-full relative" style={{ backgroundColor: isRedMotion ? ZONES[4].hex : "transparent", padding:"clamp(4rem,8vw,6rem) clamp(1rem,5vw,3rem) clamp(2rem,4vw,3rem)" }}>
         <div className="max-w-4xl mx-auto text-center mb-10 text-white relative z-10">
           <div className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white/10 backdrop-blur-sm border border-white/20">
-            <span className="live-dot" style={{ backgroundColor:"#4ade80" }} />
-            <span>Pipeline active · Collecting now</span>
+            <FlaskConical className="w-3.5 h-3.5" />
+            <span>Demo runs on a frozen synthetic panel · no live collection</span>
           </div>
 
           <h2 className="font-bold mb-4 mx-auto"
@@ -674,7 +701,7 @@ export default function LandingPage() {
               </svg>
             </div>
             <span style={{ fontSize:"0.75rem", fontWeight:500, color:"rgba(255,255,255,0.7)" }}>
-              © 2026 Aerodex · SIH26056 · MoSPI
+              © 2026 AeroDex · SIH26056 · MoSPI
             </span>
           </div>
           <div className="flex items-center gap-6 flex-wrap justify-center">
