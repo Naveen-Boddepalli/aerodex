@@ -11,8 +11,9 @@ htmlcov/
 data/
 out/
 archive/
-dashboard/node_modules/
-dashboard/out/
-dashboard/.next/
+# The dashboard lives in frontend/ and carries its own .gitignore.
 .DS_Store
 scratch_playwright.py
+
+# Office lock files — PowerPoint/Word write these next to an open document.
+~$*
