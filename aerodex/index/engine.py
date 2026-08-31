@@ -20,7 +20,7 @@ import pandas as pd
 
 from aerodex.config import MethodologyConfig, canonical_json
 from aerodex.index.aggregate import lowe
-from aerodex.index.elementary import jevons_from_panel
+from aerodex.index.elementary import jevons, relatives_from_medians
 from aerodex.index.impute import stratum_group_mean
 
 #: Columns a panel must carry. Anything else is ignored by the engine.
@@ -115,6 +115,21 @@ def compute_index(
             for s in all_strata
         }
 
+    # Median fare per (period, stratum, item), taken once for the whole panel.
+    #
+    # The inner loop below used to filter the panel to one stratum and call
+    # groupby(...).median() on that slice, twice per stratum per period pair —
+    # ~24k boolean masks and groupbys over the same rows, which is where all
+    # the runtime went. Grouping by (period, stratum, key) up front partitions
+    # the panel exactly the same way, so each group holds the same rows in the
+    # same order and the medians are identical, not merely close.
+    medians = work.groupby(["period", "stratum", "itinerary_key"], sort=True)[
+        "fare_inr_paise"
+    ].median()
+    stratum_medians: dict[tuple[object, str], pd.Series] = {
+        ps: grp.droplevel([0, 1]) for ps, grp in medians.groupby(level=[0, 1], sort=False)
+    }
+
     rows: list[dict] = []
     level = config.base_value
 
@@ -135,18 +150,23 @@ def compute_index(
     )
 
     for prev, cur in zip(periods[:-1], periods[1:], strict=True):
-        prev_df = work[work["period"] == prev]
+        # Only the current period's rows are still needed directly, for the
+        # quote count; the comparison itself reads the precomputed medians.
         cur_df = work[work["period"] == cur]
 
         ratios: dict[str, float] = {}
         matched_counts: dict[str, int] = {}
         for s in all_strata:
-            r, n = jevons_from_panel(
-                cur_df[cur_df["stratum"] == s],
-                prev_df[prev_df["stratum"] == s],
-                min_matched=min_matched,
-                clip=clip,
-            )
+            cur_med = stratum_medians.get((cur, s))
+            prev_med = stratum_medians.get((prev, s))
+            if cur_med is None or prev_med is None:
+                # A stratum absent from either period matches nothing, exactly
+                # as the empty-slice path did before.
+                r, n = float("nan"), 0
+            else:
+                rel = relatives_from_medians(cur_med, prev_med)
+                n = int(len(rel))
+                r = float("nan") if n < min_matched else jevons(rel, clip=clip)
             ratios[s] = r
             matched_counts[s] = n
 

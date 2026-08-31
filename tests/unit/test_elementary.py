@@ -87,3 +87,64 @@ def test_duplicate_quotes_collapse_by_median():
     cur = pd.DataFrame({"itinerary_key": ["a"] * 3, "fare_inr_paise": [140, 150, 160]})
     rel = price_relatives(cur, base)
     assert len(rel) == 1 and rel["a"] == pytest.approx(1.5)
+
+
+# --- the assumption behind the engine's precomputed medians ------------------
+#
+# compute_index groups the whole panel by (period, stratum, itinerary_key) once
+# instead of slicing to one stratum and grouping 24k times. That is only sound
+# if grouping-then-slicing and slicing-then-grouping partition the rows the
+# same way, giving bit-identical medians and — because Jevons means logs, and
+# float summation is order-dependent — the same key order.
+
+
+def _panel():
+    return pd.DataFrame({
+        "period": ["p1"] * 6 + ["p2"] * 6,
+        "stratum": ["A", "A", "A", "B", "B", "B"] * 2,
+        # 'a' appears twice in one group, so the median actually aggregates
+        "itinerary_key": ["b", "a", "a", "z", "y", "x"] * 2,
+        "fare_inr_paise": [500, 100, 300, 900, 700, 800,
+                           550, 120, 360, 990, 700, 760],
+    })
+
+
+def test_global_grouping_matches_per_stratum_grouping():
+    panel = _panel()
+    grouped = panel.groupby(["period", "stratum", "itinerary_key"], sort=True)[
+        "fare_inr_paise"
+    ].median()
+
+    for (period, stratum), fast in grouped.groupby(level=[0, 1], sort=False):
+        slice_ = panel[(panel["period"] == period) & (panel["stratum"] == stratum)]
+        reference = slice_.groupby("itinerary_key")["fare_inr_paise"].median()
+        fast = fast.droplevel([0, 1])
+        assert list(fast.index) == list(reference.index), "key order diverged"
+        assert fast.to_numpy().tolist() == reference.to_numpy().tolist()
+
+
+def test_relatives_from_medians_matches_price_relatives():
+    """The fast path and the reference path must agree exactly, order included."""
+    from aerodex.index.elementary import relatives_from_medians
+
+    panel = _panel()
+    cur = panel[(panel["period"] == "p2") & (panel["stratum"] == "A")]
+    base = panel[(panel["period"] == "p1") & (panel["stratum"] == "A")]
+
+    reference = price_relatives(cur, base)
+    fast = relatives_from_medians(
+        cur.groupby("itinerary_key")["fare_inr_paise"].median(),
+        base.groupby("itinerary_key")["fare_inr_paise"].median(),
+    )
+    pd.testing.assert_series_equal(fast, reference)
+    assert jevons(fast) == jevons(reference)
+
+
+def test_missing_stratum_matches_the_empty_slice_it_replaced():
+    """The engine returns (nan, 0) for a stratum absent from a period. That has
+    to equal what the old empty-DataFrame slice produced."""
+    empty = pd.DataFrame({"itinerary_key": [], "fare_inr_paise": []})
+    populated = _panel()
+    value, n = jevons_from_panel(empty, populated)
+    assert n == 0
+    assert np.isnan(value)

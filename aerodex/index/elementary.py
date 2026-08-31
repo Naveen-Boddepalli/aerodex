@@ -12,6 +12,24 @@ import numpy as np
 import pandas as pd
 
 
+def relatives_from_medians(cur: pd.Series, bas: pd.Series) -> pd.Series:
+    """Matched-model relatives from two already-aggregated median series.
+
+    Split out of :func:`price_relatives` so a caller holding many strata can
+    take the median once for the whole panel instead of once per stratum per
+    period — see ``engine.compute_index``. Both series must be indexed by the
+    item key and ordered as ``groupby(key).median()`` leaves them (sorted), so
+    that ``matched`` comes out in the same order either way: ``jevons`` means
+    logs, and float summation is order-dependent.
+    """
+    matched = cur.index.intersection(bas.index)
+    if len(matched) == 0:
+        return pd.Series(dtype="float64", name="relative")
+    rel = (cur.loc[matched] / bas.loc[matched]).astype("float64")
+    rel.name = "relative"
+    return rel
+
+
 def price_relatives(
     current: pd.DataFrame,
     base: pd.DataFrame,
@@ -24,14 +42,10 @@ def price_relatives(
     Only items present in *both* periods contribute — that is what "matched"
     means, and it is why quality adjustment (hedonic.py) is needed separately.
     """
-    cur = current.groupby(key)[price].median()
-    bas = base.groupby(key)[price].median()
-    matched = cur.index.intersection(bas.index)
-    if len(matched) == 0:
-        return pd.Series(dtype="float64", name="relative")
-    rel = (cur.loc[matched] / bas.loc[matched]).astype("float64")
-    rel.name = "relative"
-    return rel
+    return relatives_from_medians(
+        current.groupby(key)[price].median(),
+        base.groupby(key)[price].median(),
+    )
 
 
 def jevons(
