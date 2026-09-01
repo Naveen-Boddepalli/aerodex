@@ -17,10 +17,15 @@ def relatives_from_medians(cur: pd.Series, bas: pd.Series) -> pd.Series:
 
     Split out of :func:`price_relatives` so a caller holding many strata can
     take the median once for the whole panel instead of once per stratum per
-    period — see ``engine.compute_index``. Both series must be indexed by the
-    item key and ordered as ``groupby(key).median()`` leaves them (sorted), so
-    that ``matched`` comes out in the same order either way: ``jevons`` means
-    logs, and float summation is order-dependent.
+    period. Both series must be indexed by the item key and ordered as
+    ``groupby(key).median()`` leaves them (sorted), so that ``matched`` comes
+    out in the same order either way: ``jevons`` means logs, and float
+    summation is order-dependent.
+
+    ``engine.compute_index`` no longer goes through here — it pivots the
+    medians into one matrix and matches with a boolean mask — but it reproduces
+    exactly this ordering, and :mod:`tests.unit.test_elementary` pins the two
+    against each other.
     """
     matched = cur.index.intersection(bas.index)
     if len(matched) == 0:

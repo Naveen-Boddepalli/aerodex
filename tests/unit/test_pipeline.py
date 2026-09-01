@@ -94,3 +94,106 @@ def test_engine_rejects_missing_columns():
     df = _panel_frame().drop(columns=["itinerary_key"])
     with pytest.raises(ValueError, match="itinerary_key"):
         compute_index(df, CONFIG)
+
+
+# ---------------------------------------------------------------------------
+# The store path
+#
+# Exercised against a stand-in for psycopg rather than a live database: these
+# are assertions about what `collect` does with a connection — batching, the
+# raw -> clean link, and rollback — and CI has no Postgres. The stand-in
+# implements the executemany(returning=True) / nextset() protocol the real
+# driver documents, so a change to how the code walks that protocol fails here.
+# ---------------------------------------------------------------------------
+
+
+class FakeCursor:
+    def __init__(self, conn):
+        self.conn = conn
+        self._results: list[tuple] = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def executemany(self, sql, params, returning=False):
+        if self.conn.fail_on and self.conn.fail_on in sql:
+            raise RuntimeError("simulated insert failure")
+        table = "quote_raw" if "INTO quote_raw" in sql else "quote_clean"
+        self.conn.batches.append((table, len(params)))
+        self.conn.rows[table].extend(params)
+        if returning:
+            self._results = []
+            for _ in params:
+                self.conn.next_id += 1
+                self._results.append((self.conn.next_id,))
+
+    def fetchone(self):
+        return self._results.pop(0) if self._results else None
+
+    def nextset(self):
+        return bool(self._results)
+
+
+class FakeConn:
+    def __init__(self, fail_on=None):
+        self.fail_on = fail_on
+        self.batches: list[tuple[str, int]] = []
+        self.rows: dict[str, list] = {"quote_raw": [], "quote_clean": []}
+        self.next_id = 0
+        self.commits = 0
+        self.rollbacks = 0
+
+    def cursor(self):
+        return FakeCursor(self)
+
+    def commit(self):
+        self.commits += 1
+
+    def rollback(self):
+        self.rollbacks += 1
+
+
+def _collect_into(conn, n_requests: int = 3):
+    reqs = build_requests(PANEL, "morning", today=date(2026, 9, 1))[:n_requests]
+    return collect(
+        FixtureAdapter(), reqs, CONFIG.raw, now=datetime(2026, 9, 1, tzinfo=UTC), conn=conn
+    )
+
+
+def test_store_writes_every_quote_and_reports_what_it_stored():
+    conn = FakeConn()
+    report = _collect_into(conn)
+    assert report.quotes_stored == len(conn.rows["quote_raw"]) > 0
+    assert report.store_failures == 0
+    assert len(conn.rows["quote_clean"]) == report.quotes_valid + report.quotes_quarantined
+
+
+def test_store_batches_instead_of_one_round_trip_per_quote():
+    """One executemany per table per stratum, not one execute per row."""
+    conn = FakeConn()
+    _collect_into(conn, n_requests=3)
+    raw_batches = [n for table, n in conn.batches if table == "quote_raw"]
+    assert len(raw_batches) == 3, "quote_raw should be written once per stratum"
+    assert all(n > 1 for n in raw_batches), "the batch should carry the whole stratum"
+
+
+def test_clean_rows_name_the_raw_row_they_came_from():
+    """raw_id is the audit link back to the archived response; 0 is not a link."""
+    conn = FakeConn()
+    _collect_into(conn)
+    raw_ids = {p[0] for p in conn.rows["quote_clean"]}
+    assert 0 not in raw_ids, "a clean row with raw_id=0 cannot be traced to quote_raw"
+    assert raw_ids <= {i + 1 for i in range(len(conn.rows["quote_raw"]))}
+
+
+def test_a_failed_write_rolls_back_and_the_run_continues():
+    """One bad stratum must not abort the transaction for every stratum after it."""
+    conn = FakeConn(fail_on="INTO quote_clean")
+    report = _collect_into(conn, n_requests=4)
+    assert conn.rollbacks == 4, "each failure must roll back before the next stratum"
+    assert report.store_failures == 4
+    assert report.succeeded == 4, "collection succeeded; only the write failed"
+    assert conn.commits == 0

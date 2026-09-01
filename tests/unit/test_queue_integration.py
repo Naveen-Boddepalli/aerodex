@@ -114,3 +114,22 @@ def test_reap_returns_abandoned_jobs(conn):
     conn.commit()
     assert queue.reap_stale(conn, older_than_minutes=30) == 1
     assert [j.id for j in queue.dequeue(conn, "test_collect")] == [jid]
+
+
+def test_reaping_does_not_resurrect_a_job_past_its_attempts(conn):
+    """A job that kills its worker every time must die, not be reaped forever."""
+    jid = queue.enqueue(conn, "test_collect", {"w": 5}, PAST, max_attempts=1)
+    queue.dequeue(conn, "test_collect")          # attempt 1, now 'running'
+    with conn.cursor() as cur:
+        cur.execute("UPDATE job SET locked_at = now() - interval '2 hours' WHERE id=%s", (jid,))
+    conn.commit()
+
+    assert queue.reap_stale(conn, older_than_minutes=30) == 1
+    assert queue.stats(conn, "test_collect").get("dead") == 1
+    assert queue.dequeue(conn, "test_collect") == [], "a reaped-out job must not be re-served"
+
+
+def test_worker_id_distinguishes_processes_on_one_host():
+    """locked_by has to name the worker that died, not just the machine."""
+    import os
+    assert str(os.getpid()) in queue.WORKER_ID

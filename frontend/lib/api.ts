@@ -13,7 +13,13 @@
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-export type DataSource = "database" | "demo-synthetic";
+/**
+ * Where the numbers in a response came from. `panel-config` is neither of the
+ * other two on purpose: the panel definition is configuration and is true with
+ * or without a collection run, so a response carrying no fares is not
+ * "database" and is not synthetic either.
+ */
+export type DataSource = "database" | "demo-synthetic" | "panel-config";
 
 /** Provenance every list/detail response carries, so the UI can label it. */
 export interface Provenance {
@@ -166,7 +172,7 @@ export interface PanelRoute {
   quotes: number;
 }
 
-export interface RoutesResponse {
+export interface RoutesResponse extends Provenance {
   routes: PanelRoute[];
   airports: AirportRef[];
   bounds: { lat_min: number; lat_max: number; lon_min: number; lon_max: number };
@@ -327,7 +333,12 @@ export interface PipelineStatus {
 
 export interface ApiHealth {
   status: string;
-  database: string;
+  /**
+   * `connected` — reachable and answering queries.
+   * `unavailable` — no database, the expected demo case.
+   * `error` — reachable but the probe query failed; not a demo, a fault.
+   */
+  database: "connected" | "unavailable" | "error";
   demo_dataset: string;
   data_source: DataSource | null;
   synthetic: boolean;

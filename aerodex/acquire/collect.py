@@ -13,7 +13,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from aerodex.acquire.base import Adapter, SearchRequest, SourceBlocked
 from aerodex.config import PanelConfig
-from aerodex.normalise import normalise_quotes
+from aerodex.normalise import itinerary_key, normalise_quotes
 from aerodex.validate import validate_batch
 
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -28,6 +28,11 @@ class CollectionReport:
     failed: int = 0
     quotes_valid: int = 0
     quotes_quarantined: int = 0
+    #: Observations actually committed to quote_raw. Counted separately from
+    #: quotes_valid because "the adapter parsed it" and "the archive has it" are
+    #: different facts, and M6 rests on the second one.
+    quotes_stored: int = 0
+    store_failures: int = 0
     blocked_sources: set[str] = field(default_factory=set)
     errors: list[str] = field(default_factory=list)
 
@@ -100,55 +105,131 @@ def collect(
         report.quotes_quarantined += len(held)
 
         if conn is not None:
-            _store(conn, adapter, quotes, valid, held)
+            try:
+                report.quotes_stored += _store(conn, adapter, quotes, valid, held)
+            except Exception as exc:
+                # _store has already rolled back, so the connection is usable
+                # for the next stratum. One unstorable slot is a lost stratum;
+                # a poisoned connection would be a lost slot.
+                report.store_failures += 1
+                report.errors.append(f"store failed on {req.stratum}: {exc}")
 
     return report
 
 
-def _store(conn, adapter: Adapter, raw_quotes, valid, held) -> None:
-    """Write quote_raw (append-only) and quote_clean in one transaction."""
-    with conn.cursor() as cur:
-        for q in raw_quotes:
-            cur.execute(
-                """
-                INSERT INTO quote_raw (collected_at, slot, source, origin, destination,
-                    departure_date, horizon_days, cabin, fare_inr_paise, carrier,
-                    flight_number, stops, duration_minutes, is_refundable,
-                    baggage_included, seats_remaining, payload, raw_sha256,
-                    adapter_version, acquisition_tier)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s,%s,%s)
-                """,
-                (
-                    q.collected_at, q.request.slot, q.source, q.request.origin,
-                    q.request.destination, q.request.departure_date, q.request.horizon_days,
-                    q.request.cabin, q.fare_inr_paise, q.carrier, q.flight_number, q.stops,
-                    q.duration_minutes, q.is_refundable, q.baggage_included,
-                    q.seats_remaining, json.dumps(q.payload, sort_keys=True), q.raw_sha256,
-                    adapter.version, int(q.tier),
-                ),
-            )
+def _store(conn, adapter: Adapter, raw_quotes, valid, held) -> int:
+    """Write quote_raw (append-only) and quote_clean in one transaction.
 
-        for c in valid:
-            _insert_clean(cur, c, "valid", None)
-        for c, reason in held:
-            _insert_clean(cur, c, "quarantined", reason)
-    conn.commit()
+    Returns the number of quote_raw rows written.
+
+    One transaction per stratum-slot rather than one per collection run: a
+    collector killed mid-slot should lose the stratum it was on, not the two
+    hours of strata behind it.
+
+    On failure the transaction is rolled back before the exception leaves.
+    Without that, psycopg leaves the connection in an aborted transaction and
+    *every* subsequent stratum in the run fails with "current transaction is
+    aborted" — one bad row turning into a lost slot.
+    """
+    if not raw_quotes and not valid and not held:
+        return 0
+    try:
+        with conn.cursor() as cur:
+            raw_ids = _insert_raw(cur, adapter, raw_quotes)
+            _insert_clean(cur, [(c, "valid", None) for c in valid], raw_ids)
+            _insert_clean(cur, [(c, "quarantined", r) for c, r in held], raw_ids)
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    return len(raw_quotes)
 
 
-def _insert_clean(cur, c, status: str, reason: str | None) -> None:
-    cur.execute(
-        """
-        INSERT INTO quote_clean (raw_id, collected_at, slot, source, origin, destination,
-            departure_date, horizon_days, cabin, fare_inr_paise, carrier, carrier_type,
-            stops, departure_time_bucket, duration_minutes, is_refundable,
-            baggage_included, itinerary_key, validation_status, quarantine_reason)
-        VALUES (0,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::validation_status,%s)
-        ON CONFLICT (itinerary_key, collected_at, source) DO NOTHING
-        """,
+_INSERT_RAW = """
+    INSERT INTO quote_raw (collected_at, slot, source, origin, destination,
+        departure_date, horizon_days, cabin, fare_inr_paise, carrier,
+        flight_number, stops, duration_minutes, is_refundable,
+        baggage_included, seats_remaining, payload, raw_sha256,
+        adapter_version, acquisition_tier)
+    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s,%s,%s)
+    RETURNING id
+"""
+
+_INSERT_CLEAN = """
+    INSERT INTO quote_clean (raw_id, collected_at, slot, source, origin, destination,
+        departure_date, horizon_days, cabin, fare_inr_paise, carrier, carrier_type,
+        stops, departure_time_bucket, duration_minutes, is_refundable,
+        baggage_included, itinerary_key, validation_status, quarantine_reason)
+    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::validation_status,%s)
+    ON CONFLICT (itinerary_key, collected_at, source) DO NOTHING
+"""
+
+
+def _insert_raw(cur, adapter: Adapter, quotes) -> dict[tuple[str, int, str], int]:
+    """Append the batch to quote_raw, returning a lookup to its new ids.
+
+    Batched through ``executemany`` rather than a statement per quote: a full
+    panel slot is ~2,500 observations, and a round trip each is the difference
+    between a slot that finishes inside its ±15 minute window and one that does
+    not.
+
+    The lookup is keyed on ``(itinerary_key, fare, source)`` — the same key
+    :func:`aerodex.normalise.normalise_quotes` derived the clean rows from, so
+    every clean row can name the archived raw row it came from instead of the
+    placeholder zero that used to be stored there. M6 is an audit trail from a
+    published number back to a raw response; a clean row that cannot name its
+    raw row is a broken link in it.
+    """
+    if not quotes:
+        return {}
+
+    params = [
         (
-            c.collected_at, c.slot, c.raw_source, c.origin, c.destination, c.departure_date,
-            c.horizon_days, c.cabin, c.fare_inr_paise, c.carrier, c.carrier_type, c.stops,
-            c.departure_time_bucket, c.duration_minutes, c.is_refundable,
-            c.baggage_included, c.itinerary_key, status, reason,
-        ),
+            q.collected_at, q.request.slot, q.source, q.request.origin,
+            q.request.destination, q.request.departure_date, q.request.horizon_days,
+            q.request.cabin, q.fare_inr_paise, q.carrier, q.flight_number, q.stops,
+            q.duration_minutes, q.is_refundable, q.baggage_included,
+            q.seats_remaining, json.dumps(q.payload, sort_keys=True), q.raw_sha256,
+            adapter.version, int(q.tier),
+        )
+        for q in quotes
+    ]
+
+    # psycopg >= 3.1: executemany(returning=True) leaves one result set per
+    # statement, walked with nextset().
+    cur.executemany(_INSERT_RAW, params, returning=True)
+    ids: list[int] = []
+    while True:
+        row = cur.fetchone()
+        ids.append(int(row[0]) if row else 0)
+        if not cur.nextset():
+            break
+
+    if len(ids) != len(quotes):  # pragma: no cover - driver contract
+        raise RuntimeError(
+            f"quote_raw returned {len(ids)} ids for {len(quotes)} quotes; "
+            "cannot attribute clean rows to their raw rows"
+        )
+    return {
+        (itinerary_key(q), int(q.fare_inr_paise), q.source): i
+        for q, i in zip(quotes, ids, strict=True)
+    }
+
+
+def _insert_clean(cur, rows, raw_ids: dict[tuple[str, int, str], int]) -> None:
+    """Append normalised rows to quote_clean, each pointing at its raw row."""
+    if not rows:
+        return
+    cur.executemany(
+        _INSERT_CLEAN,
+        [
+            (
+                raw_ids.get((c.itinerary_key, int(c.fare_inr_paise), c.raw_source), 0),
+                c.collected_at, c.slot, c.raw_source, c.origin, c.destination,
+                c.departure_date, c.horizon_days, c.cabin, c.fare_inr_paise, c.carrier,
+                c.carrier_type, c.stops, c.departure_time_bucket, c.duration_minutes,
+                c.is_refundable, c.baggage_included, c.itinerary_key, status, reason,
+            )
+            for c, status, reason in rows
+        ],
     )
