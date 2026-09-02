@@ -1,0 +1,5 @@
+This directory is created on first run of:
+
+    uv run python scripts/backtest/run_backtest.py
+
+Output: backtest_report.md

@@ -383,8 +383,8 @@
       "sha256": "f101f4c3631219336606f602973bb44296a57bca5532bc0f26e47209b48bd467"
     },
     "breach/panel.csv.gz": {
-      "bytes": 1010957,
-      "sha256": "a5f27cea21d0f8a339a1ee54a9ede69931e73fa479defe2e3330ccd294f21f3b"
+      "bytes": 1014785,
+      "sha256": "5991987973db4e1e49826e6a09aaaa3b639b4c7f2be8c094546b96f715d10471"
     },
     "expected_hashes.json": {
       "bytes": 399,
@@ -399,8 +399,8 @@
       "sha256": "2a9d20580bf2253185085cc08d4962d8435f79663ca737fe1f25bbe359f0ea7a"
     },
     "panel.csv.gz": {
-      "bytes": 1013829,
-      "sha256": "fbc6e642d8fed4380b34022c0e7234d67c2924cf457b5377b1d966725a0fba9c"
+      "bytes": 1017704,
+      "sha256": "29ee13d3c7608896837c56610c88d655007183e2e0eae28f75dac87ce01b6d74"
     }
   },
   "generated_by": "scripts/make_demo_data.py",

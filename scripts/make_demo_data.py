@@ -91,7 +91,7 @@ SLOT = "morning"
 #: shows. Same column set as tests/golden/panel.csv.
 PANEL_COLUMNS = [
     "period", "origin", "destination", "horizon_days", "itinerary_key",
-    "fare_inr_paise", "carrier", "stops", "duration_minutes",
+    "fare_inr_paise", "carrier", "cabin", "stops", "duration_minutes",
     "departure_time_bucket",
 ]
 
@@ -216,6 +216,7 @@ def collect_panel(
                     "itinerary_key": c.itinerary_key,
                     "fare_inr_paise": c.fare_inr_paise,
                     "carrier": c.carrier,
+                    "cabin": c.cabin,
                     "stops": c.stops,
                     "duration_minutes": c.duration_minutes,
                     "departure_time_bucket": c.departure_time_bucket,

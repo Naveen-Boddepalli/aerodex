@@ -155,15 +155,15 @@ export default function HistoryPage() {
         <DataSourceBanner />
       </div>
       <div className="animate-fade-up mb-6" style={{ animationDelay: "40ms" }}>
-        <div className="mb-2 flex items-center gap-2">
-          <div className="h-5 w-1 rounded-full bg-aero-primary" />
-          <span className="aero-label">Historical series</span>
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <span className="gov-badge">Statistical Release · MoSPI · SIH26056</span>
         </div>
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <h1 className="text-3xl font-bold text-aero-dark sm:text-4xl">Price history</h1>
+            <h1 className="text-3xl font-extrabold tracking-tight text-aero-dark sm:text-4xl">DAPI Index Time Series</h1>
             <p className="mt-1 max-w-2xl text-sm text-aero-mid">
-              The published index and the corridor fares it aggregates, over the same periods.
+              Published index series (base {/* will be filled by API context */}2026-09 = 100) and
+              the corridor stratum medians it aggregates, over the selected reference window.
             </p>
           </div>
           <button
@@ -348,27 +348,35 @@ export default function HistoryPage() {
                       y={100}
                       stroke="#8A99BB"
                       strokeDasharray="4 4"
-                      label={{ value: "base 100", position: "insideTopLeft", fontSize: 10, fill: "#8A99BB" }}
+                      label={{ value: "Base 100", position: "insideTopLeft", fontSize: 10, fill: "#8A99BB" }}
                     />
                     <Tooltip
                       content={({ active, payload }) => {
                         if (!active || !payload?.length) return null;
                         const p = payload[0].payload as (typeof headline)[number];
+                        const isProvisional = p.is_base === false;
                         return (
                           <div className="aero-card p-3 shadow-aero-md">
-                            <p className="text-[11px] font-semibold text-aero-muted">
-                              {formatDate(p.period)}
-                            </p>
+                            <div className="mb-1 flex items-center gap-2">
+                              <p className="text-[11px] font-semibold text-aero-muted">
+                                {formatDate(p.period)}
+                              </p>
+                              {isProvisional
+                                ? <span className="status-provisional">Provisional</span>
+                                : <span className="status-final">Final</span>
+                              }
+                            </div>
                             <p className="mt-1 text-lg font-bold tabular-nums text-aero-dark">
                               {p.value.toFixed(2)}
                             </p>
                             <p className="text-[11px] text-aero-mid">
-                              {p.n_quotes.toLocaleString("en-IN")} quotes ·{" "}
+                              {p.n_quotes.toLocaleString("en-IN")} obs. ·{" "}
                               {pct(p.coverage_ratio, 1)} coverage
                             </p>
                             {p.imputed_weight_share > 0 && (
-                              <p className="text-[11px] text-amber-700">
+                              <p className={`text-[11px] font-semibold ${p.imputed_weight_share > 0.05 ? 'text-red-600' : 'text-amber-700'}`}>
                                 {pct(p.imputed_weight_share, 2)} imputed
+                                {p.imputed_weight_share > 0.05 && " — M5 ceiling breached"}
                               </p>
                             )}
                           </div>

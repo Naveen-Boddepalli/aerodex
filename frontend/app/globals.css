@@ -17,6 +17,9 @@
   --color-aero-rise:     #F04438;
   --color-aero-stable:   #6172A0;
   --color-aero-badge:    #EBF1FF;
+  /* Statistical annotation — amber/gold for provisional, estimated, warnings */
+  --color-aero-amber:    #B45309;
+  --color-aero-amber-bg: #FFFBEB;
 
   /* Font */
   --font-family-sans: var(--font-inter), system-ui, sans-serif;
@@ -62,6 +65,8 @@
   --aero-border:   #DDE4F5;
   --aero-drop:     #12B76A;
   --aero-rise:     #F04438;
+  --aero-amber:    #B45309;
+  --aero-amber-bg: #FFFBEB;
 }
 
 * {
@@ -95,6 +100,114 @@ body {
   border-radius: 1rem;
   border: 1px solid #DDE4F5;
   box-shadow: 0 1px 4px rgba(36,86,232,0.08);
+}
+
+/* Statistical publication card — slightly tighter, more formal */
+.stat-card {
+  background-color: #fff;
+  border-radius: 0.75rem;
+  border: 1px solid #DDE4F5;
+  box-shadow: 0 1px 3px rgba(36,86,232,0.06);
+}
+
+/* Statistical table row — rule-separated, no border-radius */
+.stat-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #EEF2FB;
+  font-size: 0.75rem;
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-row-label { color: #8A99BB; font-weight: 500; }
+.stat-row-value { color: #0D1B3E; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* KPI primary — large index-level number, government style */
+.kpi-primary {
+  font-size: 2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: #0D1B3E;
+  line-height: 1;
+}
+
+/* KPI secondary — smaller supporting metric */
+.kpi-secondary {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #0D1B3E;
+  line-height: 1;
+}
+
+/* Government classification / publication badge */
+.gov-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  background-color: #0D1B3E;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Provisional / revision status badges */
+.status-provisional {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  background-color: #FFFBEB;
+  color: #B45309;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  border: 1px solid #FDE68A;
+}
+.status-final {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  background-color: #F0FDF4;
+  color: #15803D;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  border: 1px solid #BBF7D0;
+}
+.status-revised {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  background-color: #EFF6FF;
+  color: #1D4ED8;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  border: 1px solid #BFDBFE;
+}
+
+/* Inline estimation badge — for decomposed/estimated data */
+.est-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.375rem;
+  background-color: #FFFBEB;
+  color: #92400E;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border: 1px solid #FDE68A;
 }
 
 .aero-label {

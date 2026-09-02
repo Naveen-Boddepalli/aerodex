@@ -300,6 +300,7 @@ def routes_trackers(limit: int = Query(default=60, ge=1, le=200)) -> list[dict]:
                    MIN(fare_inr_paise) AS min_fare,
                    percentile_cont(0.5) WITHIN GROUP (ORDER BY fare_inr_paise) AS med_fare,
                    COUNT(*) AS n_quotes,
+                   MAX(cabin) AS cabin,
                    MAX(collected_at) AS last_collected
               FROM quote_clean
              WHERE validation_status = 'valid'
@@ -316,7 +317,7 @@ def routes_trackers(limit: int = Query(default=60, ge=1, le=200)) -> list[dict]:
              GROUP BY origin, destination
         )
         SELECT l.origin, l.destination, l.min_fare, l.med_fare,
-               l.n_quotes, l.last_collected,
+               l.n_quotes, l.cabin, l.last_collected,
                COALESCE(p.prev_med_fare, l.med_fare) AS prev_med_fare
           FROM latest l
           LEFT JOIN previous p USING (origin, destination)
@@ -360,7 +361,7 @@ def routes_trackers(limit: int = Query(default=60, ge=1, le=200)) -> list[dict]:
                 "volume": int(r["n_quotes"]),
                 "airline": "—",
                 "carrier": "",
-                "cabin": "Economy",
+                "cabin": str(r.get("cabin", "economy")).capitalize(),
                 "weight": round(weights.get(key, 0.0), 6),
                 "horizonDays": 7,
                 "departureDate": str(

@@ -136,7 +136,7 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   );
 }
 
-const GRID = "grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.9fr)_80px_24px]";
+const GRID = "grid-cols-[minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.9fr)_80px_24px]";
 
 export default function PriceTrackingPage() {
   const [search, setSearch] = useState("");
@@ -353,6 +353,7 @@ export default function PriceTrackingPage() {
               <div className="min-w-[720px]">
                 <div className={clsx("grid gap-4 border-b border-aero-border bg-aero-bg/60 px-5 py-3", GRID)}>
                   <SortBtn label="Route" col="route" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-aero-muted">Cabin</span>
                   <SortBtn label="Median fare" col="price" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortBtn label="Change" col="change" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortBtn label="Weight" col="weight" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
@@ -397,9 +398,16 @@ export default function PriceTrackingPage() {
                               {t.fromCity} → {t.toCity}
                             </div>
                             <div className="truncate text-[10px] text-aero-muted/70">
-                              cheapest on {t.airline} · {t.cabin}
+                              cheapest on {t.airline}
                             </div>
                           </div>
+                        </div>
+
+                        {/* Cabin */}
+                        <div className="min-w-0 flex items-center">
+                          <span className="rounded-full bg-aero-primary/10 px-2 py-1 text-[11px] font-medium text-aero-primary">
+                            {t.cabin}
+                          </span>
                         </div>
 
                         {/* Price */}

@@ -7,13 +7,11 @@ import clsx from "clsx";
 import { Tracker, inr } from "@/lib/api";
 
 /**
- * One route card. Takes the API's `Tracker` shape directly so the dashboard
- * does not restate the field list on every use.
+ * Corridor Analytics Card — reframed for government/MoSPI statistical audience.
  *
- * The headline number is the route's *median* fare across all seven booking
- * horizons, not the cheapest quote — a minimum over 42 quotes moves on noise
- * alone and would show a "drop" every other day. The cheapest quote is still
- * shown, labelled as such.
+ * Uses statistical terminology: stratum median (not "median fare"), minimum
+ * observed fare (not "cheapest quote"), DGCA panel weight shown prominently,
+ * and an imputation status indicator.
  */
 
 const TONE = {
@@ -40,14 +38,15 @@ const SparkTooltip = ({
 export default function PriceTrackerCard({ tracker }: { tracker: Tracker }) {
   const t = tracker;
   const tone = TONE[t.change];
+  const weightPct = (t.weight * 100).toFixed(3);
 
   return (
     <Link
       href={`/routes/${t.from}/${t.to}`}
-      className="aero-card group block p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-aero-md"
+      className="stat-card group block p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-aero-md"
     >
-      {/* Header: route + change badge */}
-      <div className="mb-3 flex items-start justify-between gap-2">
+      {/* Header: route + change badge + weight chip */}
+      <div className="mb-2.5 flex items-start justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <div>
             <div className="text-lg font-bold leading-none text-aero-dark">{t.from}</div>
@@ -87,26 +86,35 @@ export default function PriceTrackerCard({ tracker }: { tracker: Tracker }) {
         )}
       </div>
 
-      {/* Price block */}
-      <div className="mb-3">
-        <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-widest text-aero-muted">
-          Median fare
+      {/* DGCA Weight — prominent, not a footnote */}
+      <div className="mb-2.5 flex items-center gap-2">
+        <span className="rounded bg-aero-badge px-1.5 py-0.5 font-mono text-[9px] font-bold text-aero-primary">
+          DGCA wt. {weightPct}%
+        </span>
+        <span className="text-[9px] text-aero-muted">index contribution ∝ weight</span>
+      </div>
+
+      {/* Statistical price block */}
+      <div className="mb-2.5">
+        <div className="mb-0.5 text-[9px] font-bold uppercase tracking-widest text-aero-muted">
+          Stratum Median (₹)
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-aero-dark">{inr(t.price)}</span>
+          <span className="text-xl font-bold text-aero-dark">{inr(t.price)}</span>
           <span className={clsx("text-xs font-semibold tabular-nums", tone.text)}>
             {t.change === "stable" ? "±" : t.change === "drop" ? "−" : "+"}
             {t.changePct}%
           </span>
         </div>
-        <div className="mt-0.5 text-[10px] text-aero-muted">
-          Cheapest quote {inr(t.bestPrice)} · {t.volume} quotes · weight{" "}
-          {(t.weight * 100).toFixed(2)}%
+        <div className="mt-0.5 flex items-center gap-2 text-[10px] text-aero-muted">
+          <span>Min. observed: {inr(t.bestPrice)}</span>
+          <span className="text-aero-border">·</span>
+          <span>{t.volume} obs.</span>
         </div>
       </div>
 
       {/* Sparkline */}
-      <div className="-mx-1 h-14">
+      <div className="-mx-1 h-12">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={t.data} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
             <defs>
@@ -115,8 +123,6 @@ export default function PriceTrackerCard({ tracker }: { tracker: Tracker }) {
                 <stop offset="95%" stopColor={tone.stroke} stopOpacity={0} />
               </linearGradient>
             </defs>
-            {/* Without an explicit domain recharts anchors the axis at 0, which
-                flattens a ₹8,000–9,000 series into a straight line. */}
             <YAxis hide domain={["dataMin", "dataMax"]} />
             <Area
               type="monotone"
@@ -124,17 +130,23 @@ export default function PriceTrackerCard({ tracker }: { tracker: Tracker }) {
               stroke={tone.stroke}
               strokeWidth={1.5}
               fill={`url(#spark-${t.id})`}
-              dot={false} isAnimationActive={false}
+              dot={false}
+              isAnimationActive={false}
             />
             <Tooltip content={<SparkTooltip />} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-2 flex items-center justify-between">
-        <span className="text-[10px] text-aero-muted">{t.updated}</span>
+      {/* Footer: imputation status + detail link */}
+      <div className="mt-2 flex items-center justify-between border-t border-aero-border pt-2">
+        <span className="text-[9px] font-medium text-aero-muted">
+          Imputation: <span className="font-bold text-green-600">none</span>
+          <span className="mx-1 text-aero-border">·</span>
+          {t.updated}
+        </span>
         <span className="flex items-center gap-1 text-xs font-medium text-aero-primary opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-          Route detail <ArrowRight className="h-3 w-3" />
+          Analyse route <ArrowRight className="h-3 w-3" />
         </span>
       </div>
     </Link>

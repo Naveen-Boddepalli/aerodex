@@ -159,6 +159,7 @@ def route_cheapest_itinerary() -> dict[str, dict]:
         row = grp.loc[grp["fare_inr"].idxmin()]
         out[str(route)] = {
             "carrier": str(row["carrier"]),
+            "cabin": str(row.get("cabin", "economy")).capitalize(),
             "airline": carrier_name(str(row["carrier"])),
             "stops": int(row["stops"]),
             "duration_minutes": int(row["duration_minutes"]),
@@ -346,7 +347,7 @@ def trackers(limit: int | None = None) -> list[dict]:
                 "volume": int(cur_row.iloc[0]["n_quotes"]),
                 "airline": itin.get("airline", "—"),
                 "carrier": itin.get("carrier", ""),
-                "cabin": "Economy",
+                "cabin": itin.get("cabin", "Economy"),
                 "weight": round(weights.get(route, 0.0), 6),
                 "horizonDays": horizon,
                 "departureDate": dep.isoformat(),

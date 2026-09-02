@@ -19,7 +19,20 @@ The core Python application and CLI.
 ### `frontend/`
 The Next.js 16 App Router dashboard.
 - **`app/`**: Contains the route groups `(marketing)` for the landing page and `(dashboard)` for the main app shell.
-- **`components/`**: Reusable React components (e.g., `DataSourceBanner`, `IndexStats`).
+  - **`app/(dashboard)/page.tsx`**: Main dashboard — styled as a statistical publication (gov-badge header, DAPI title, MoSPI classification).
+  - **`app/(dashboard)/methodology/page.tsx`**: Full 9-section publication-quality methodology document.
+  - **`app/(dashboard)/history/page.tsx`**: DAPI Index Time Series with provisional/final markers.
+  - **`app/(dashboard)/heatmap/page.tsx`**: Network Heatmap showing period-on-period inflation by origin-destination.
+  - **`app/(dashboard)/routes/[origin]/[destination]/page.tsx`**: Route detail with FareBreakupPanel and lead-time elasticity curve.
+- **`components/`**: Reusable React components.
+  - **`DataSourceBanner.tsx`**: Synthetic data warning — must always be rendered.
+  - **`IndexStats.tsx`**: 5-card KPI strip (DAPI Index Level, Panel Coverage, Observation Volume, Data Quality Gate, Revision Status).
+  - **`PriceTrackerCard.tsx`**: Corridor analytics card with Stratum Median, DGCA weight chip, imputation status.
+  - **`FareBreakupPanel.tsx`**: Statutory fare decomposition (base, fuel surcharge, UDF, taxes, surge). All values are *estimated* using statutory rates — labelled with `est-badge`.
+  - **`StatisticalSummaryTable.tsx`**: NSO-style methodology disclosure block; links to `/methodology`.
+  - **`IndexProvenance.tsx`**: Reproducibility hashes, quality gauges, compliance rules.
+  - **`RouteExplorer.tsx`**: Panel query interface.
+  - **`RouteMapSection.tsx`**: SVG panel network map.
 - **`lib/api.ts`**: The single, unified place where the frontend communicates with the backend API via HTTP.
 
 ### `config/`
@@ -27,6 +40,12 @@ YAML files driving the project's logic without hardcoding values in Python.
 - **`methodology.yaml`**: The index definition (formulas, base periods, max imputation limits). This file is SHA-256 hashed into every published artifact.
 - **`panel.yaml`**: Defines the 60 routes, their DGCA weights, horizons, and slots.
 - **`calendar.yaml`**: Festival and vacation windows for seasonality adjustments.
+
+### `scripts/`
+Maintenance, data generation, and offline reporting scripts.
+- **`backtest/`**: Contains the DGCA back-test script (`run_backtest.py`) which outputs `backtest_report.md` comparing the index against official MoCA/DGCA figures.
+- **`make_demo_data.py`**: Generates the synthetic `demo/` panel.
+- **`parse_dgca_weights.py`**: Parses official DGCA passenger traffic to build route weights.
 
 ### `tests/`
 - **`unit/`**: Standard unit tests for isolated functions.
