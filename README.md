@@ -132,8 +132,13 @@ uv run python -m aerodex.cli collect --slot morning --date 2026-09-01 --store
 ```
 
 ```bash
-uv run python -m aerodex.cli index
+uv run python -m aerodex.cli index --store
 ```
+
+`--store` is what makes the index endpoints read from the database: it writes
+the computed series into `index_point`, which is the table
+`/api/v1/index/latest` and `/api/v1/index/history` query. Without it the run
+produces artifacts and nothing else, and the API keeps serving `demo/`.
 
 Start the API against that database and the same dashboard serves collected
 data with `data_source: "database"` instead. Nothing in the frontend changes —
@@ -253,7 +258,7 @@ uv run python -m aerodex.cli <command>
 | `--slot {morning,afternoon,evening}` | Which fixed IST slot |
 | `--date YYYY-MM-DD` | Collection date (default: today) |
 | `--limit N` | Cap requests, for smoke tests |
-| `--store` | Write to the database |
+| `--store` | Write quotes and this slot's adapter health to the database |
 
 **`index`**
 
@@ -265,6 +270,7 @@ uv run python -m aerodex.cli <command>
 | `--publish` | Run the result through the publisher — it refuses rather than emitting an unpublishable release (exit 3) |
 | `--source NAME` | Declare a panel source for the publisher's synthetic check (repeatable) |
 | `--allow-synthetic` | Let a fixture-derived panel past the synthetic refusal — demos only |
+| `--store` | Write the computed series to `index_point` — what the API's database path reads |
 | `--artifacts-dir PATH` | Write the release here when the publisher accepts it |
 
 **`verify`**
@@ -359,7 +365,7 @@ back to `demo/`, reporting which in `data_source`.
 | `GET /api/v1/health` | Which data source is live, and the period being served |
 | `GET /api/v1/index/latest` | Latest index value plus provenance — mirrors `index_latest.json` |
 | `GET /api/v1/index/history?days=` | Headline series plus per-route fare series over the same periods |
-| `GET /api/v1/routes` | The panel definition — O–D pairs, DGCA weights, airport coordinates |
+| `GET /api/v1/routes` | The panel definition — O–D pairs, DGCA weights, airport coordinates, and each route's current fares |
 | `GET /api/v1/routes/trackers?limit=` | Per-route cards: fare now, change, sparkline |
 | `GET /api/v1/routes/{origin}/{dest}` | One route: fare by horizon, by carrier, over time |
 | `GET /api/v1/search?origin=&destination=&horizon=` | The quotes collected for one stratum |
@@ -376,14 +382,25 @@ Every response that carries data also carries where it came from:
 {
   "value": 107.4366,
   "period": "2026-09-30",
-  "data_source": "demo-synthetic",   // or "database"
+  "data_source": "demo-synthetic",   // or "database", or "panel-config"
   "synthetic": true,
   "notice": "Fixture-derived demo data. …Not a measurement."
 }
 ```
 
+| `data_source` | Means |
+| --- | --- |
+| `database` | Collected quotes. A measurement. |
+| `demo-synthetic` | The frozen fixture run in `demo/`. Not a measurement. |
+| `panel-config` | Configuration only — the panel definition with no fares attached. True with or without a collection run, so it is neither of the other two. |
+
 Clients must render that distinction. The dashboard does; anything else built
 on this API is expected to.
+
+`GET /api/v1/health` reports the database separately as `connected`,
+`unavailable` (no database — the expected demo case) or `error` (a database
+that answered but could not serve the probe query). The third is a fault, not
+a demo, and is worth alerting on.
 
 ---
 

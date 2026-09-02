@@ -4,6 +4,7 @@
     aerodex panel            show the panel's shape and sizing
     aerodex collect          run one slot's collection
     aerodex index            compute the index from the database
+    aerodex index --store    compute, then write the series to index_point
     aerodex index --publish  compute, then have the publisher accept or refuse it
     aerodex verify           re-run a stored index and diff the hash (M6)
 """
@@ -95,8 +96,18 @@ def _cmd_collect(args) -> int:
         conn_ctx = connect()
         conn = conn_ctx.__enter__()
 
+    adapter = adapter_cls()
     try:
-        report = collect(adapter_cls(), requests, meth.raw, now=collected_at, conn=conn)
+        report = collect(adapter, requests, meth.raw, now=collected_at, conn=conn)
+        if conn is not None:
+            # M3 lives in adapter_health, and /api/v1/health/nodes reads it.
+            # Recorded after the run rather than per stratum: the metric is
+            # "what this slot achieved", which is not known until it ends.
+            from aerodex.db.records import record_adapter_health
+
+            record_adapter_health(
+                conn, args.source, args.slot, today, report, tier=int(adapter.tier)
+            )
     finally:
         if conn_ctx is not None:
             conn_ctx.__exit__(None, None, None)
@@ -109,6 +120,10 @@ def _cmd_collect(args) -> int:
     print(f"success rate    : {report.success_rate:.1%}  (M3 target >= 95%)")
     print(f"valid quotes    : {report.quotes_valid}")
     print(f"quarantined     : {report.quotes_quarantined}")
+    if args.store:
+        print(f"stored          : {report.quotes_stored} raw observations")
+        if report.store_failures:
+            print(f"STORE FAILURES  : {report.store_failures} stratum-slot(s) not archived")
     if report.blocked_sources:
         print(f"BLOCKED sources : {sorted(report.blocked_sources)}")
     for err in report.errors[:5]:
@@ -187,9 +202,49 @@ def _cmd_index(args) -> int:
         out.to_json(args.out, orient="records", indent=2)
         print(f"wrote {args.out}")
 
+    if args.store:
+        rc = _store_index(out, meth, args)
+        if rc:
+            return rc
+
     if args.publish:
         return _publish(out, meth, args)
     return 1 if breached else 0
+
+
+def _store_index(index_df, meth: MethodologyConfig, args) -> int:
+    """Persist the computed series into ``index_point``.
+
+    Separate from ``--publish``: storing is what makes the API's database path
+    return anything at all, and it is right to do for a run the publisher would
+    refuse. The refusal is about what may be *released*; the database is the
+    working record, and ``is_provisional`` plus ``config_hash`` say what each
+    row is.
+    """
+    from datetime import timedelta
+
+    from aerodex.db.connection import connect
+    from aerodex.db.records import store_index_points
+
+    provisional_days = int(meth["revision"]["provisional_days"])
+    # The revision policy's cutoff, taken from the run date rather than from
+    # each period, so a backfill does not re-open periods the policy froze.
+    cutoff = date.today() - timedelta(days=provisional_days)
+
+    try:
+        with connect() as conn:
+            n = store_index_points(
+                conn, index_df, meth,
+                computed_at=datetime.now(UTC),
+                provisional_before=cutoff,
+            )
+    except Exception as exc:
+        print(f"\nstore failed: {exc}", file=sys.stderr)
+        return 4
+
+    print(f"\nstored {n} index point(s); provisional from {cutoff} "
+          f"({provisional_days}-day revision window)")
+    return 0
 
 
 def _publish(index_df, meth: MethodologyConfig, args) -> int:
@@ -283,7 +338,8 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("--slot", default="morning", choices=["morning", "afternoon", "evening"])
     c.add_argument("--date", help="collection date, YYYY-MM-DD (default: today)")
     c.add_argument("--limit", type=int, help="cap requests, for smoke tests")
-    c.add_argument("--store", action="store_true", help="write to the database")
+    c.add_argument("--store", action="store_true",
+                   help="write quotes and this slot's adapter health to the database")
     c.set_defaults(fn=_cmd_collect)
 
     i = sub.add_parser("index", help="compute the index")
@@ -300,6 +356,9 @@ def main(argv: list[str] | None = None) -> int:
     i.add_argument("--allow-synthetic", action="store_true",
                    help="let a fixture-derived panel past the synthetic refusal — for "
                         "demos only, never a real release")
+    i.add_argument("--store", action="store_true",
+                   help="write the computed series to index_point, which is what the "
+                        "API's database path reads")
     i.add_argument("--artifacts-dir",
                    help="write the release here when the publisher accepts it")
     i.set_defaults(fn=_cmd_index)

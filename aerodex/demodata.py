@@ -296,6 +296,18 @@ def index_history(days: int = 30) -> dict:
 def trackers(limit: int | None = None) -> list[dict]:
     """One card per panel route: fare now, change since the previous period,
     and a sparkline of the route's own recent history."""
+    items = list(_all_trackers())
+    return items[:limit] if limit else items
+
+
+@lru_cache(maxsize=1)
+def _all_trackers() -> tuple[dict, ...]:
+    """The tracker cards for every route.
+
+    Cached like the aggregates below it: ``demo/`` is frozen, so this is the
+    same 60 cards on every request, and rebuilding them per request was the
+    most expensive thing the demo path did.
+    """
     daily = route_daily()
     cheapest = route_cheapest_itinerary()
     weights = route_weights()
@@ -361,7 +373,7 @@ def trackers(limit: int | None = None) -> list[dict]:
 
     # Heaviest routes first: the panel's own ordering, not an arbitrary one.
     out.sort(key=lambda t: t["weight"], reverse=True)
-    return out[:limit] if limit else out
+    return tuple(out)
 
 
 def route_detail(origin: str, destination: str) -> dict | None:
@@ -484,6 +496,11 @@ def alerts() -> list[dict]:
     Deterministic, and every number traces back to rows in
     ``demo/panel.csv.gz``.
     """
+    return list(_all_alerts())
+
+
+@lru_cache(maxsize=1)
+def _all_alerts() -> tuple[dict, ...]:
     daily = route_daily()
     all_periods = periods()
     last = all_periods[-1]
@@ -526,7 +543,7 @@ def alerts() -> list[dict]:
         )
 
     out.sort(key=lambda a: (not a["triggered"], float(a["delta"])))
-    return out
+    return tuple(out)
 
 
 def routes() -> list[dict]:

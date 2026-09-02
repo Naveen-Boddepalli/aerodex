@@ -20,7 +20,6 @@ import pandas as pd
 
 from aerodex.config import MethodologyConfig, canonical_json
 from aerodex.index.aggregate import lowe
-from aerodex.index.elementary import jevons, relatives_from_medians
 from aerodex.index.impute import stratum_group_mean
 
 #: Columns a panel must carry. Anything else is ignored by the engine.
@@ -39,10 +38,6 @@ def panel_hash(panel: pd.DataFrame) -> str:
     df = panel[cols].sort_values(cols).reset_index(drop=True)
     payload = canonical_json(df.to_dict(orient="records"))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
-
-
-def _stratum_id(origin: str, destination: str, horizon: int) -> str:
-    return f"{origin}-{destination}@{horizon}d"
 
 
 def compute_index(
@@ -92,16 +87,16 @@ def compute_index(
     max_imputed = config.max_imputed_share
 
     work = panel.copy()
-    work["stratum"] = [
-        _stratum_id(o, d, h)
-        for o, d, h in zip(
-            work["origin"], work["destination"], work["horizon_days"], strict=True
-        )
-    ]
+    # Stratum id is ``ORIG-DEST@Nd`` (the same shape as
+    # ``SearchRequest.stratum``), built vectorised rather than with a per-row
+    # f-string: one pass over the columns instead of one Python format call per
+    # quote.
     work["route"] = work["origin"] + "-" + work["destination"]
+    work["stratum"] = work["route"] + "@" + work["horizon_days"].astype(str) + "d"
 
     all_strata = sorted(work["stratum"].unique())
-    stratum_route = dict(zip(work["stratum"], work["route"], strict=True))
+    route_of = work[["stratum", "route"]].drop_duplicates()
+    stratum_route = dict(zip(route_of["stratum"], route_of["route"], strict=True))
 
     if weights is None:
         stratum_weights = {s: 1.0 for s in all_strata}
@@ -115,26 +110,44 @@ def compute_index(
             for s in all_strata
         }
 
-    # Median fare per (period, stratum, item), taken once for the whole panel.
+    # Median fare per (period, stratum, item), taken once for the whole panel
+    # and then pivoted into a dense item x period matrix.
     #
-    # The inner loop below used to filter the panel to one stratum and call
-    # groupby(...).median() on that slice, twice per stratum per period pair —
-    # ~24k boolean masks and groupbys over the same rows, which is where all
-    # the runtime went. Grouping by (period, stratum, key) up front partitions
-    # the panel exactly the same way, so each group holds the same rows in the
-    # same order and the medians are identical, not merely close.
+    # The comparison loop below used to hold one pandas Series per
+    # (period, stratum) and intersect two of them per stratum per period pair —
+    # tens of thousands of index joins and .loc lookups over the same rows,
+    # which is where the runtime went. The matrix carries exactly the same
+    # numbers: its rows are (stratum, itinerary_key) in sorted order, so each
+    # stratum is one contiguous row block and a period pair's relatives are a
+    # single vector division. Matching becomes a boolean mask instead of an
+    # index join, and the surviving log-relatives still reach ``mean()`` in
+    # sorted-key order — which matters, because float summation is
+    # order-dependent and M6 diffs the output hash.
     medians = work.groupby(["period", "stratum", "itinerary_key"], sort=True)[
         "fare_inr_paise"
     ].median()
-    stratum_medians: dict[tuple[object, str], pd.Series] = {
-        ps: grp.droplevel([0, 1]) for ps, grp in medians.groupby(level=[0, 1], sort=False)
+    wide = medians.unstack(level="period").reindex(columns=periods)
+    prices = wide.to_numpy(dtype="float64", na_value=np.nan)
+
+    # One contiguous row block per stratum, read straight off the sorted index.
+    row_stratum = wide.index.get_level_values("stratum").to_numpy()
+    edges = np.flatnonzero(row_stratum[1:] != row_stratum[:-1]) + 1
+    blocks: dict[str, tuple[int, int]] = {
+        row_stratum[lo]: (int(lo), int(hi))
+        for lo, hi in zip(
+            np.concatenate(([0], edges)),
+            np.concatenate((edges, [len(row_stratum)])),
+            strict=True,
+        )
     }
+
+    column_of = {p: i for i, p in enumerate(periods)}
+    quotes_per_period = work["period"].value_counts()
 
     rows: list[dict] = []
     level = config.base_value
 
     # Base period: the index is 100 by definition, with no comparison behind it.
-    base_n = int((work["period"] == periods[0]).sum())
     rows.append(
         {
             "period": periods[0],
@@ -142,33 +155,49 @@ def compute_index(
             "index_ratio": 1.0,
             "imputed_weight_share": 0.0,
             "coverage_ratio": 1.0,
-            "n_quotes": base_n,
-            "n_strata_reported": int(work[work["period"] == periods[0]]["stratum"].nunique()),
+            "n_quotes": int(quotes_per_period.get(periods[0], 0)),
+            "n_strata_reported": int(
+                work.loc[work["period"] == periods[0], "stratum"].nunique()
+            ),
             "imputation_ceiling_breached": False,
             "is_base": True,
         }
     )
 
     for prev, cur in zip(periods[:-1], periods[1:], strict=True):
-        # Only the current period's rows are still needed directly, for the
-        # quote count; the comparison itself reads the precomputed medians.
-        cur_df = work[work["period"] == cur]
+        cur_col = prices[:, column_of[cur]]
+        prev_col = prices[:, column_of[prev]]
+        with np.errstate(divide="ignore", invalid="ignore"):
+            rel = cur_col / prev_col
+            log_rel = np.log(rel)
+
+        # "Matched" means exactly what the index intersection meant: the item
+        # carries a price in both periods.
+        matched = ~(np.isnan(cur_col) | np.isnan(prev_col))
+        # Jevons drops non-positive relatives (a zero fare is a parse failure)
+        # and anything outside the configured clip band, as data errors.
+        usable = matched & (rel > 0)
+        if clip is not None:
+            low, high = clip
+            usable &= (rel >= low) & (rel <= high)
 
         ratios: dict[str, float] = {}
-        matched_counts: dict[str, int] = {}
         for s in all_strata:
-            cur_med = stratum_medians.get((cur, s))
-            prev_med = stratum_medians.get((prev, s))
-            if cur_med is None or prev_med is None:
-                # A stratum absent from either period matches nothing, exactly
+            span = blocks.get(s)
+            if span is None:
+                # A stratum priced in no period at all matches nothing, exactly
                 # as the empty-slice path did before.
-                r, n = float("nan"), 0
-            else:
-                rel = relatives_from_medians(cur_med, prev_med)
-                n = int(len(rel))
-                r = float("nan") if n < min_matched else jevons(rel, clip=clip)
-            ratios[s] = r
-            matched_counts[s] = n
+                ratios[s] = float("nan")
+                continue
+            lo, hi = span
+            # A stratum thinner than the configured floor is imputed, not
+            # published on two coincidental matches. The floor is checked on the
+            # matched count, before the clip band drops outliers.
+            if int(matched[lo:hi].sum()) < min_matched:
+                ratios[s] = float("nan")
+                continue
+            kept = log_rel[lo:hi][usable[lo:hi]]
+            ratios[s] = float(np.exp(kept.mean())) if kept.size else float("nan")
 
         series = pd.Series(ratios, dtype="float64")
         reported = int(series.notna().sum())
@@ -194,7 +223,7 @@ def compute_index(
                 "index_ratio": float(ratio) if np.isfinite(ratio) else float("nan"),
                 "imputed_weight_share": float(imp.imputed_weight_share),
                 "coverage_ratio": float(coverage),
-                "n_quotes": int(len(cur_df)),
+                "n_quotes": int(quotes_per_period.get(cur, 0)),
                 "n_strata_reported": reported,
                 "imputation_ceiling_breached": bool(imp.exceeded_ceiling),
                 "is_base": False,

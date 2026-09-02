@@ -27,6 +27,9 @@ import hashlib
 import json
 import logging
 import os
+import threading
+import time
+from contextlib import contextmanager
 from datetime import date, timedelta
 from typing import Any
 
@@ -39,33 +42,95 @@ from aerodex.airports import AIRPORTS, INDIA_BOUNDS, airport_dict, carrier_name,
 logger = logging.getLogger(__name__)
 
 DB_SOURCE = "database"
+#: Provenance for responses that are panel configuration rather than observed
+#: fares — true whatever the data source, so neither label would be honest.
+CONFIG_SOURCE = "panel-config"
 
 ROUTE_COLORS = demodata.ROUTE_COLORS
+
+#: How long an "unreachable" verdict is trusted before the database is probed
+#: again. Demo mode is the default mode, and without this every single request
+#: pays a full connection attempt.
+DB_PROBE_TTL_S = float(os.getenv("AERODEX_DB_PROBE_TTL_S", "30"))
 
 
 # ---------------------------------------------------------------------------
 # Database helpers
 # ---------------------------------------------------------------------------
 
+_probe_lock = threading.Lock()
+#: monotonic timestamp of the last failed connection attempt, or None.
+_unreachable_since: float | None = None
 
-def _try_connect():
-    """Try to get a psycopg connection. Returns None if the DB is unavailable."""
+
+def _note_unreachable() -> None:
+    global _unreachable_since
+    with _probe_lock:
+        _unreachable_since = time.monotonic()
+
+
+def _note_reachable() -> None:
+    global _unreachable_since
+    with _probe_lock:
+        _unreachable_since = None
+
+
+def _recently_unreachable() -> bool:
+    with _probe_lock:
+        since = _unreachable_since
+    return since is not None and (time.monotonic() - since) < DB_PROBE_TTL_S
+
+
+def reset_db_probe() -> None:
+    """Forget the cached verdict. For tests, and for anything that knows the
+    database just changed state."""
+    _note_reachable()
+
+
+@contextmanager
+def _db_session():
+    """Yield a live connection, or None when the database is unreachable.
+
+    One connection per request rather than one per query: an endpoint that
+    reads the index and then the route fares used to open, authenticate and
+    tear down two of them.
+
+    A failed attempt is remembered for :data:`DB_PROBE_TTL_S`, so the demo path
+    — no database at all — does not pay a connection attempt on every request.
+    The window is short enough that a database coming up is picked up within a
+    collection slot rather than needing a restart.
+    """
+    if _recently_unreachable():
+        yield None
+        return
+
+    from aerodex.db.connection import connect
+
     try:
-        from aerodex.db.connection import connect
-
         ctx = connect()
         conn = ctx.__enter__()
-        return ctx, conn
-    except Exception:
-        return None
+    except Exception as exc:
+        logger.info("database unreachable, serving demo/ for the next %.0fs: %s",
+                    DB_PROBE_TTL_S, exc)
+        _note_unreachable()
+        yield None
+        return
+
+    _note_reachable()
+    try:
+        yield conn
+    finally:
+        ctx.__exit__(None, None, None)
 
 
-def _db_query(sql: str, params: tuple = ()) -> list[dict] | None:
-    """Run a query, returning a list of dicts, or None if the DB is unreachable."""
-    result = _try_connect()
-    if result is None:
-        return None
-    ctx, conn = result
+def _rows(conn, sql: str, params: tuple = ()) -> list[dict]:
+    """Run one query on an open connection. Returns [] and logs on failure.
+
+    A failed query rolls the transaction back so the *next* query on this same
+    connection still runs — without that, one bad statement aborts the
+    transaction and every later query in the request fails for a reason that
+    has nothing to do with it.
+    """
     try:
         with conn.cursor() as cur:
             cur.execute(sql, params)
@@ -73,11 +138,25 @@ def _db_query(sql: str, params: tuple = ()) -> list[dict] | None:
                 return []
             cols = [d[0] for d in cur.description]
             return [dict(zip(cols, row, strict=True)) for row in cur.fetchall()]
-    except Exception as e:
-        logger.warning("DB query failed: %s", e)
-        return None
-    finally:
-        ctx.__exit__(None, None, None)
+    except Exception:
+        # Loud: the database answered, so this is a broken query or a schema
+        # drift, not the expected demo-mode absence. Falling through to demo/
+        # keeps the dashboard up, but the cause must not be swallowed.
+        logger.exception("DB query failed; falling back to demo/ for this response")
+        conn.rollback()
+        return []
+
+
+def _db_query(sql: str, params: tuple = ()) -> list[dict] | None:
+    """Run a single query on its own connection.
+
+    Returns None when the database is unreachable, so callers can tell "no
+    database" from "database with nothing to say".
+    """
+    with _db_session() as conn:
+        if conn is None:
+            return None
+        return _rows(conn, sql, params)
 
 
 def _demo_unavailable() -> HTTPException:
@@ -175,14 +254,35 @@ def index_latest() -> dict:
 @app.get("/api/v1/index/history")
 def index_history(days: int = Query(default=30, ge=7, le=365)) -> dict:
     """Headline index series plus per-route fare series over the same periods."""
-    rows = _db_query("""
-        SELECT period, value, imputed_weight_share, coverage_ratio, n_quotes, is_base
-          FROM index_point
-         WHERE series = 'headline'
-           AND frequency = 'daily'
-           AND period >= current_date - %s * interval '1 day'
-         ORDER BY period
-    """, (days,))
+    with _db_session() as conn:
+        # is_base is not a stored column — the base period is simply the first
+        # period of the series, so it is derived here. Selecting it as a column
+        # (which this query used to do) fails against a live database, and the
+        # only visible effect is the dashboard quietly serving demo/ forever.
+        rows = None if conn is None else _rows(conn, """
+            SELECT period, value, imputed_weight_share, coverage_ratio, n_quotes,
+                   period = (SELECT MIN(period) FROM index_point
+                              WHERE series = 'headline' AND frequency = 'daily')
+                       AS is_base
+              FROM index_point
+             WHERE series = 'headline'
+               AND frequency = 'daily'
+               AND period >= current_date - %s * interval '1 day'
+             ORDER BY period
+        """, (days,))
+
+        # The per-route fares are read on the same connection while it is open;
+        # they are only meaningful next to a headline series, so there is
+        # nothing to fetch when that came back empty.
+        fare_rows = [] if not rows else _rows(conn, """
+            SELECT origin, destination, collected_at::date AS period,
+                   percentile_cont(0.5) WITHIN GROUP (ORDER BY fare_inr_paise) AS median_fare
+              FROM quote_clean
+             WHERE validation_status = 'valid'
+               AND collected_at >= current_date - %s * interval '1 day'
+             GROUP BY origin, destination, collected_at::date
+             ORDER BY period
+        """, (days,))
 
     if rows:
         headline = [
@@ -197,16 +297,6 @@ def index_history(days: int = Query(default=30, ge=7, le=365)) -> dict:
             }
             for r in rows
         ]
-
-        fare_rows = _db_query("""
-            SELECT origin, destination, collected_at::date AS period,
-                   percentile_cont(0.5) WITHIN GROUP (ORDER BY fare_inr_paise) AS median_fare
-              FROM quote_clean
-             WHERE validation_status = 'valid'
-               AND collected_at >= current_date - %s * interval '1 day'
-             GROUP BY origin, destination, collected_at::date
-             ORDER BY period
-        """, (days,)) or []
 
         weights = demodata.route_weights()
         present = {f"{r['origin'].strip()}-{r['destination'].strip()}" for r in fare_rows}
@@ -257,30 +347,74 @@ def index_history(days: int = Query(default=30, ge=7, le=365)) -> dict:
 # ---------------------------------------------------------------------------
 
 
+def _panel_routes(fares: dict[str, dict] | None = None) -> list[dict]:
+    """The panel definition, one entry per O–D pair, optionally carrying fares.
+
+    The definition itself is configuration, so it is served whether or not a
+    single quote has ever been collected; ``fares`` fills in the numbers when
+    there are some.
+    """
+    weights = demodata.route_weights()
+    fares = fares or {}
+    items = [
+        {
+            "id": key,
+            "origin": airport_dict(key.split("-")[0]),
+            "destination": airport_dict(key.split("-")[1]),
+            "weight": round(weight, 6),
+            "medianFare": None,
+            "bestFare": None,
+            "quotes": 0,
+            **fares.get(key, {}),
+        }
+        for key, weight in weights.items()
+    ]
+    items.sort(key=lambda r: float(r["weight"]), reverse=True)
+    return items
+
+
 @app.get("/api/v1/routes")
 def routes() -> dict:
     """The panel definition — every O–D pair with its DGCA weight and airports.
 
     Also returns the map projection bounds so the dashboard's route map does not
     hard-code a gazetteer.
+
+    The fares attached to each route are observations, so this response carries
+    provenance like every other: the route map draws rupee values, and a
+    fixture fare drawn on a map is exactly as much a non-measurement as one
+    drawn on a chart.
     """
-    if not demodata.available():
-        # The panel definition is config, not data — serve it even with no run.
-        weights = demodata.route_weights()
-        items = [
-            {
-                "id": key,
-                "origin": airport_dict(key.split("-")[0]),
-                "destination": airport_dict(key.split("-")[1]),
-                "weight": round(w, 6),
-                "medianFare": None,
-                "bestFare": None,
-                "quotes": 0,
+    rows = _db_query("""
+        SELECT origin, destination,
+               MIN(fare_inr_paise) AS min_fare,
+               percentile_cont(0.5) WITHIN GROUP (ORDER BY fare_inr_paise) AS med_fare,
+               COUNT(*) AS n_quotes
+          FROM quote_clean
+         WHERE validation_status = 'valid'
+           AND collected_at > now() - interval '24 hours'
+         GROUP BY origin, destination
+    """)
+
+    if rows:
+        fares = {
+            f"{r['origin'].strip()}-{r['destination'].strip()}": {
+                "medianFare": round(float(r["med_fare"]) / 100),
+                "bestFare": round(float(r["min_fare"]) / 100),
+                "quotes": int(r["n_quotes"]),
             }
-            for key, w in weights.items()
-        ]
-    else:
+            for r in rows
+        }
+        items, source, synthetic, notice = _panel_routes(fares), DB_SOURCE, False, None
+    elif demodata.available():
         items = demodata.routes()
+        source, synthetic, notice = (
+            demodata.DATA_SOURCE, True, demodata.SYNTHETIC_NOTICE,
+        )
+    else:
+        # No fares at all — nothing here is an observation, so neither
+        # "database" nor "demo-synthetic" would describe it.
+        items, source, synthetic, notice = _panel_routes(), CONFIG_SOURCE, False, None
 
     return {
         "routes": items,
@@ -288,6 +422,9 @@ def routes() -> dict:
         "bounds": INDIA_BOUNDS,
         "horizons": demodata.panel_config().get("horizons_days", []),
         "count": len(items),
+        "data_source": source,
+        "synthetic": synthetic,
+        "notice": notice,
     }
 
 
@@ -529,12 +666,28 @@ def methodology() -> dict:
 
 @app.get("/api/v1/health")
 def health() -> dict:
-    """Which data source the API is actually serving from."""
-    db_ok = _try_connect() is not None
+    """Which data source the API is actually serving from.
+
+    The probe runs a statement rather than only opening a socket: a connection
+    that cannot answer ``SELECT 1`` is not a source the dashboard can be told
+    it is reading from. The three database states are distinct on purpose —
+    ``unavailable`` is the expected demo case, ``error`` is not.
+    """
+    # Bypass the cached verdict: this endpoint's whole job is to report the
+    # database's state right now, and it is what an operator refreshes after
+    # starting one.
+    reset_db_probe()
+    with _db_session() as conn:
+        if conn is None:
+            database = "unavailable"
+        else:
+            database = "connected" if _rows(conn, "SELECT 1") else "error"
+
+    db_ok = database == "connected"
     demo_ok = demodata.available()
     return {
         "status": "ok" if (db_ok or demo_ok) else "degraded",
-        "database": "connected" if db_ok else "unavailable",
+        "database": database,
         "demo_dataset": "present" if demo_ok else "missing",
         "data_source": DB_SOURCE if db_ok else (demodata.DATA_SOURCE if demo_ok else None),
         "synthetic": not db_ok and demo_ok,

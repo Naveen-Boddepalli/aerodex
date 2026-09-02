@@ -71,7 +71,7 @@ echo "→ Dashboard http://localhost:$WEB_PORT"
   cd frontend
   # The dashboard calls same-origin /api/*; Next rewrites that to the API, so
   # the browser never makes a cross-origin request.
-  AERODEX_API_ORIGIN="http://127.0.0.1:$API_PORT" npm run dev -- --port "$WEB_PORT"
+  NEXT_PUBLIC_API_URL="http://localhost:$API_PORT" npm run dev -- --webpack --port "$WEB_PORT"
 ) &
 PIDS+=($!)
 

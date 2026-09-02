@@ -108,6 +108,22 @@ def build_artifacts(
     )
 
 
+def _replace_atomically(path: Path, body: str) -> None:
+    """Write via a temporary file in the same directory, then rename.
+
+    ``index_latest.json`` is what the dashboard polls. A direct write truncates
+    it first, so a crash — or a reader arriving mid-write — sees a half-file
+    where a published number should be. rename(2) within a directory is atomic:
+    a reader gets the old artifact or the new one, never a torn one.
+    """
+    tmp = path.with_name(f".{path.name}.tmp")
+    try:
+        tmp.write_text(body)
+        tmp.replace(path)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
 def write_artifacts(artifacts: Artifacts, out_dir: str | Path) -> list[Path]:
     """Write artifacts to a directory. Upload to R2 is a separate step, so a
     failed upload cannot leave a half-published release behind."""
@@ -117,7 +133,7 @@ def write_artifacts(artifacts: Artifacts, out_dir: str | Path) -> list[Path]:
 
     def _json(name: str, obj) -> None:
         path = out / name
-        path.write_text(json.dumps(obj, indent=2, sort_keys=True, default=str) + "\n")
+        _replace_atomically(path, json.dumps(obj, indent=2, sort_keys=True, default=str) + "\n")
         written.append(path)
 
     _json("index_latest.json", artifacts.index_latest)
@@ -125,7 +141,9 @@ def write_artifacts(artifacts: Artifacts, out_dir: str | Path) -> list[Path]:
     _json(artifacts.release_name, artifacts.index_latest)
 
     csv_path = out / "index_full.csv"
-    artifacts.index_full.to_csv(csv_path, index=False, lineterminator="\n")
+    _replace_atomically(
+        csv_path, artifacts.index_full.to_csv(index=False, lineterminator="\n")
+    )
     written.append(csv_path)
 
     return written

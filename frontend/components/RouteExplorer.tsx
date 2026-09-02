@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowLeftRight, Plane, CalendarClock, Search, Clock, Loader2, Layers,
+  ArrowLeftRight, Plane, CalendarClock, Search, Clock, Loader2, Layers, ChevronDown,
 } from "lucide-react";
 import clsx from "clsx";
 import {
@@ -168,17 +168,18 @@ export default function RouteExplorer() {
             <div className="relative rounded-xl border border-aero-border bg-aero-bg p-3 transition-colors focus-within:border-aero-primary">
               <div className="flex items-start gap-2">
                 <Plane className="mt-0.5 h-4 w-4 shrink-0 rotate-45 text-aero-primary" />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 relative">
                   <select
                     id="origin"
                     value={origin}
                     onChange={(e) => pickOrigin(e.target.value)}
-                    className="w-full cursor-pointer appearance-none bg-transparent text-2xl font-bold leading-none text-aero-dark focus:outline-none"
+                    className="w-full cursor-pointer appearance-none bg-transparent pr-6 text-2xl font-bold leading-none text-aero-dark focus:outline-none"
                   >
                     {origins.map((a) => (
                       <option key={a.iata} value={a.iata}>{a.iata}</option>
                     ))}
                   </select>
+                  <ChevronDown className="pointer-events-none absolute right-0 top-1.5 h-5 w-5 text-aero-muted" />
                   <div className="mt-1 truncate text-xs text-aero-muted">
                     {origins.find((a) => a.iata === origin)?.city ?? "—"}
                   </div>
@@ -207,17 +208,18 @@ export default function RouteExplorer() {
             <div className="relative rounded-xl border border-aero-border bg-aero-bg p-3 transition-colors focus-within:border-aero-primary">
               <div className="flex items-start gap-2">
                 <Plane className="mt-0.5 h-4 w-4 shrink-0 text-aero-sky" />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 relative">
                   <select
                     id="destination"
                     value={destination}
                     onChange={(e) => setDestination(e.target.value)}
-                    className="w-full cursor-pointer appearance-none bg-transparent text-2xl font-bold leading-none text-aero-dark focus:outline-none"
+                    className="w-full cursor-pointer appearance-none bg-transparent pr-6 text-2xl font-bold leading-none text-aero-dark focus:outline-none"
                   >
                     {destinations.map((a) => (
                       <option key={a.iata} value={a.iata}>{a.iata}</option>
                     ))}
                   </select>
+                  <ChevronDown className="pointer-events-none absolute right-0 top-1.5 h-5 w-5 text-aero-muted" />
                   <div className="mt-1 truncate text-xs text-aero-muted">
                     {destinations.find((a) => a.iata === destination)?.city ?? "—"}
                   </div>

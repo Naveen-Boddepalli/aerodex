@@ -9,12 +9,17 @@ this project runs ~1,155.
 from __future__ import annotations
 
 import json
+import os
 import socket
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-WORKER_ID = f"{socket.gethostname()}:{__name__}"
+#: Identifies the claiming process in ``job.locked_by``. The pid is part of it
+#: because two collectors on one host are the ordinary deployment, and
+#: ``reap_stale`` leaves behind a locked_by that has to name *which* worker
+#: died, not merely which machine.
+WORKER_ID = f"{socket.gethostname()}:{os.getpid()}"
 
 
 @dataclass
@@ -115,12 +120,24 @@ def fail(conn, job_id: int, error: str) -> str:
 
 
 def reap_stale(conn, older_than_minutes: int = 30) -> int:
-    """Return jobs stuck in 'running' (worker died mid-slot) to the queue."""
+    """Return jobs stuck in 'running' (worker died mid-slot) to the queue.
+
+    A job that has already used its attempts is reaped to 'dead', not back to
+    'pending'. Returning it to the queue would let a job that kills its worker
+    every time be reaped and re-served forever — the exact infinite retry that
+    :func:`fail` exists to prevent, reached by the other door.
+    """
     with conn.cursor() as cur:
         cur.execute(
             """
-            UPDATE job SET status='pending', locked_at=NULL, locked_by=NULL
-             WHERE status='running' AND locked_at < now() - (%s || ' minutes')::interval
+            UPDATE job
+               SET status = CASE WHEN attempts >= max_attempts THEN 'dead'::job_status
+                                 ELSE 'pending'::job_status END,
+                   locked_at = NULL, locked_by = NULL,
+                   last_error = COALESCE(last_error,
+                                         'reaped: worker died holding this job')
+             WHERE status = 'running'
+               AND locked_at < now() - (%s || ' minutes')::interval
             """,
             (older_than_minutes,),
         )
@@ -138,4 +155,9 @@ def stats(conn, kind: str | None = None) -> dict[str, Any]:
             )
         else:
             cur.execute("SELECT status::text, count(*) FROM job GROUP BY 1")
-        return dict(cur.fetchall())
+        out = dict(cur.fetchall())
+    # Close the read transaction. A monitoring call left idle-in-transaction
+    # pins the oldest snapshot and stops autovacuum reclaiming anything behind
+    # it — on a hypertable ingesting every slot, that is not a small leak.
+    conn.rollback()
+    return out
