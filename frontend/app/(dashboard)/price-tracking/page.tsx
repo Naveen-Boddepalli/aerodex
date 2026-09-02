@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
   TrendingDown, TrendingUp, Minus, ArrowUpDown, ArrowUp, ArrowDown,
-  Filter, Search, Plane, ChevronDown, X, SlidersHorizontal, ChevronRight,
+  Filter, Search, Plane, ChevronDown, X, SlidersHorizontal, ChevronRight, Download,
 } from "lucide-react";
 import clsx from "clsx";
 import { ResponsiveContainer, AreaChart, Area, Tooltip, YAxis } from "recharts";
@@ -206,24 +206,55 @@ export default function PriceTrackingPage() {
   const hasFilters =
     airline !== "All airlines" || stops !== "All stops" || changeF !== "All changes" || !!search;
 
+  const exportCsv = useCallback(() => {
+    if (!filtered.length) return;
+    const header = ["Route", "Origin", "Destination", "Cabin", "Min. Quote Airline", "Median Fare (INR)", "Change (%)", "DGCA Weight"];
+    const rows = filtered.map((t) => [
+      `${t.from}-${t.to}`,
+      t.fromCity,
+      t.toCity,
+      t.cabin,
+      t.airline,
+      t.price,
+      t.change === "drop" ? -t.changePct : t.changePct,
+      (t.weight * 100).toFixed(3) + "%"
+    ]);
+    const csv = [header.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `aerodex-panel-routes.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [filtered]);
+
   return (
     <div className="pb-16 pt-8">
       {/* ── Header ── */}
       <div className="animate-fade-up mb-6">
         <DataSourceBanner />
       </div>
-      <div className="animate-fade-up mb-6" style={{ animationDelay: "40ms" }}>
-        <div className="mb-2 flex items-center gap-2">
-          <div className="h-5 w-1 rounded-full bg-aero-primary" />
-          <span className="aero-label">60-route panel</span>
+      <div className="animate-fade-up mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end" style={{ animationDelay: "40ms" }}>
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <div className="h-5 w-1 rounded-full bg-aero-primary" />
+            <span className="aero-label">60-route panel</span>
+          </div>
+          <h1 className="text-3xl font-bold leading-tight text-aero-dark sm:text-4xl">
+            Stratum Analytics
+          </h1>
+          <p className="mt-1 max-w-2xl text-sm text-aero-mid">
+            Every O–D pair in the panel, with its median fare, movement since the previous
+            collection period, and DGCA weight.
+          </p>
         </div>
-        <h1 className="text-3xl font-bold leading-tight text-aero-dark sm:text-4xl">
-          Route tracking
-        </h1>
-        <p className="mt-1 max-w-2xl text-sm text-aero-mid">
-          Every O–D pair in the panel, with its median fare, movement since the previous
-          collection period, and DGCA weight.
-        </p>
+        <button
+          onClick={exportCsv}
+          disabled={!filtered.length}
+          className="aero-btn-primary self-start disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto"
+        >
+          <Download className="h-4 w-4" /> Export CSV
+        </button>
       </div>
 
       {error ? (
@@ -398,7 +429,7 @@ export default function PriceTrackingPage() {
                               {t.fromCity} → {t.toCity}
                             </div>
                             <div className="truncate text-[10px] text-aero-muted/70">
-                              cheapest on {t.airline}
+                              Min. quote: {t.airline}
                             </div>
                           </div>
                         </div>

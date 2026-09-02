@@ -157,7 +157,7 @@ export default function RouteDetailPage({
             <div className="mb-4">
               <h2 className="text-base font-bold text-aero-dark">Fare over the collection run</h2>
               <p className="mt-0.5 text-[11px] text-aero-muted">
-                Median across all seven booking horizons, and the cheapest quote collected each day.
+                Median across all seven booking horizons, and the minimum quote collected each day.
               </p>
             </div>
             <div className="h-72">
@@ -185,7 +185,7 @@ export default function RouteDetailPage({
                   />
                   <Tooltip content={<SeriesTooltip />} />
                   <Area type="monotone" dataKey="median" name="median" stroke="#2456E8" strokeWidth={2} fill="url(#rd-median)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} isAnimationActive={false} />
-                  <Area type="monotone" dataKey="best" name="cheapest" stroke="#12B76A" strokeWidth={2} strokeDasharray="4 3" fill="url(#rd-best)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} isAnimationActive={false} />
+                  <Area type="monotone" dataKey="best" name="min quote" stroke="#12B76A" strokeWidth={2} strokeDasharray="4 3" fill="url(#rd-best)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} isAnimationActive={false} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -233,7 +233,7 @@ export default function RouteDetailPage({
                               {p.horizon_days} days out · departs {formatDate(p.departure_date)}
                             </p>
                             <p className="mt-1 text-sm font-bold text-aero-dark">
-                              {inr(p.best_fare)} <span className="text-[10px] font-medium text-aero-muted">cheapest</span>
+                              {inr(p.best_fare)} <span className="text-[10px] font-medium text-aero-muted">min quote</span>
                             </p>
                             <p className="text-[11px] text-aero-mid">
                               {inr(p.median_fare)} median · {p.n_quotes} quotes
@@ -256,7 +256,7 @@ export default function RouteDetailPage({
                   Carriers quoting this route
                 </h2>
                 <p className="mt-0.5 text-[11px] text-aero-muted">
-                  Cheapest first, {detail.period}.
+                  Ordered by minimum quote, {detail.period}.
                 </p>
               </div>
               <div className="divide-y divide-aero-border">

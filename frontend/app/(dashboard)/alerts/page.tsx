@@ -68,7 +68,7 @@ function AlertRow({ a }: { a: Alert }) {
       <div className="min-w-0 flex-[1.2]">
         <div className="text-sm font-semibold text-aero-dark">{a.route}</div>
         <div className="truncate text-[11px] text-aero-muted">
-          {a.originCity} → {a.destinationCity} · cheapest on {a.airline}
+          {a.originCity} → {a.destinationCity} · Min. quote: {a.airline}
         </div>
       </div>
 
@@ -138,12 +138,11 @@ export default function AlertsPage() {
       <div className="animate-fade-up mb-6" style={{ animationDelay: "40ms" }}>
         <div className="mb-2 flex items-center gap-2">
           <div className="h-5 w-1 rounded-full bg-aero-primary" />
-          <span className="aero-label">Threshold crossings</span>
+          <span className="aero-label">Anomaly Detection</span>
         </div>
-        <h1 className="text-3xl font-bold text-aero-dark sm:text-4xl">Alerts</h1>
+        <h1 className="text-3xl font-bold text-aero-dark sm:text-4xl">Statistical Outliers</h1>
         <p className="mt-1 max-w-2xl text-sm text-aero-mid">
-          Routes whose cheapest fare today sits below what a good fare on that corridor
-          normally looks like — the median of its own daily minimum across the run.
+          Identifying routes where the minimum observed quote deviates significantly below the historical stratum median for the run.
         </p>
       </div>
 
@@ -160,7 +159,7 @@ export default function AlertsPage() {
           <div className="animate-fade-up mb-6 grid grid-cols-3 gap-3" style={{ animationDelay: "60ms" }}>
             {[
               {
-                label: "Below threshold",
+                label: "Below Hist. Median",
                 value: res.summary.triggered,
                 icon: <BellRing className="h-4 w-4" />,
                 color: "text-green-600",
@@ -227,7 +226,7 @@ export default function AlertsPage() {
                   <div className="mb-3 flex items-center gap-2">
                     <BellRing className="h-4 w-4 text-green-600" />
                     <h2 className="text-base font-bold text-aero-dark">
-                      Cheaper than usual — {triggered.length}{" "}
+                      Below Historical Median — {triggered.length}{" "}
                       {triggered.length === 1 ? "route" : "routes"}
                     </h2>
                   </div>
@@ -265,11 +264,9 @@ export default function AlertsPage() {
                 <div className="text-sm font-semibold text-aero-dark">How these are computed</div>
                 <div className="mt-1 max-w-3xl text-xs leading-relaxed text-aero-muted">
                   These are derived, not subscribed. Each route&apos;s threshold is the{" "}
-                  {res.alerts[0]?.basis ?? "median of its daily cheapest fare over the run"},
-                  rounded to ₹100. A route is listed as cheaper than usual when the cheapest quote
-                  collected today falls below that line. Per-user alerts with Telegram delivery are
-                  not built yet — rather than mock an inbox, this page shows the crossings the
-                  panel actually contains.
+                  {res.alerts[0]?.basis ?? "median of its daily minimum quote over the run"},
+                  rounded to ₹100. A route is listed as a statistical outlier when the minimum quote
+                  collected today falls below this baseline.
                 </div>
               </div>
             </div>

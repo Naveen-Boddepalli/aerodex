@@ -8,7 +8,6 @@ import PriceTrackerCard from "@/components/PriceTrackerCard";
 import IndexProvenance from "@/components/IndexProvenance";
 import IndexStats from "@/components/IndexStats";
 import RouteMapSection from "@/components/RouteMapSection";
-import StatisticalSummaryTable from "@/components/StatisticalSummaryTable";
 import DataSourceBanner from "@/components/DataSourceBanner";
 import { ErrorBlock, Skeleton } from "@/components/states";
 import { fetchTrackers, fetchIndexLatest, Tracker, IndexLatest } from "@/lib/api";
@@ -103,16 +102,7 @@ export default function DashboardPage() {
         <RouteExplorer />
       </div>
 
-      {/* ── Index Methodology Disclosure ── */}
-      <div className="animate-fade-up mb-8" style={{ animationDelay: "160ms" }}>
-        <div className="mb-2 flex items-center gap-2">
-          <div className="h-4 w-0.5 rounded-full bg-aero-primary" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-aero-muted">
-            Methodology Summary
-          </span>
-        </div>
-        <StatisticalSummaryTable />
-      </div>
+
 
       {/* ── Corridors + Provenance ── */}
       <div

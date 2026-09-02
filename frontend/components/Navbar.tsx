@@ -21,9 +21,9 @@ import { fetchRoutes, fetchIndexLatest, PanelRoute, IndexLatest } from "@/lib/ap
 const navLinks = [
   { label: "Dashboard", href: "/" },
   { label: "Panel Routes", href: "/price-tracking" },
-  { label: "Alerts", href: "/alerts" },
-  { label: "History", href: "/history" },
   { label: "Heatmap", href: "/heatmap" },
+  { label: "History", href: "/history" },
+  { label: "Outliers", href: "/alerts" },
   { label: "Methodology", href: "/methodology" },
 ];
 
