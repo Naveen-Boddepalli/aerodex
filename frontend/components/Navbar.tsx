@@ -20,10 +20,13 @@ import { fetchRoutes, fetchIndexLatest, PanelRoute, IndexLatest } from "@/lib/ap
 
 const navLinks = [
   { label: "Dashboard", href: "/" },
-  { label: "Routes", href: "/price-tracking" },
-  { label: "Alerts", href: "/alerts" },
+  { label: "Panel Routes", href: "/price-tracking" },
+  { label: "Heatmap", href: "/heatmap" },
   { label: "History", href: "/history" },
+  { label: "Outliers", href: "/alerts" },
+  { label: "Methodology", href: "/methodology" },
 ];
+
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);

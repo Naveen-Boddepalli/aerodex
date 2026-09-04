@@ -91,7 +91,7 @@ SLOT = "morning"
 #: shows. Same column set as tests/golden/panel.csv.
 PANEL_COLUMNS = [
     "period", "origin", "destination", "horizon_days", "itinerary_key",
-    "fare_inr_paise", "carrier", "stops", "duration_minutes",
+    "fare_inr_paise", "carrier", "cabin", "stops", "duration_minutes",
     "departure_time_bucket",
 ]
 
@@ -216,6 +216,7 @@ def collect_panel(
                     "itinerary_key": c.itinerary_key,
                     "fare_inr_paise": c.fare_inr_paise,
                     "carrier": c.carrier,
+                    "cabin": c.cabin,
                     "stops": c.stops,
                     "duration_minutes": c.duration_minutes,
                     "departure_time_bucket": c.departure_time_bucket,
@@ -443,10 +444,17 @@ def main(argv: list[str] | None = None) -> int:
 
     # README.md is hand-written documentation, not generated data; hashing it
     # would make the manifest go stale on every prose edit.
+    #
+    # Dotfiles are skipped because the OS puts them here uninvited — .DS_Store
+    # on macOS above all. They are gitignored, so a manifest that hashed them
+    # would name files nobody else has, and this manifest is the provenance
+    # record a third party checks the dataset against.
     files = sorted(
         f
         for f in out.rglob("*")
-        if f.is_file() and f.name not in {"MANIFEST.json", "README.md"}
+        if f.is_file()
+        and f.name not in {"MANIFEST.json", "README.md"}
+        and not any(part.startswith(".") for part in f.relative_to(out).parts)
     )
     manifest["files"] = {
         str(f.relative_to(out)): {"bytes": f.stat().st_size, "sha256": sha256_file(f)}

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
   TrendingDown, TrendingUp, Minus, ArrowUpDown, ArrowUp, ArrowDown,
-  Filter, Search, Plane, ChevronDown, X, SlidersHorizontal, ChevronRight,
+  Filter, Search, Plane, ChevronDown, X, SlidersHorizontal, ChevronRight, Download,
 } from "lucide-react";
 import clsx from "clsx";
 import { ResponsiveContainer, AreaChart, Area, Tooltip, YAxis } from "recharts";
@@ -136,7 +136,7 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   );
 }
 
-const GRID = "grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.9fr)_80px_24px]";
+const GRID = "grid-cols-[minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.9fr)_80px_24px]";
 
 export default function PriceTrackingPage() {
   const [search, setSearch] = useState("");
@@ -206,24 +206,55 @@ export default function PriceTrackingPage() {
   const hasFilters =
     airline !== "All airlines" || stops !== "All stops" || changeF !== "All changes" || !!search;
 
+  const exportCsv = useCallback(() => {
+    if (!filtered.length) return;
+    const header = ["Route", "Origin", "Destination", "Cabin", "Min. Quote Airline", "Median Fare (INR)", "Change (%)", "DGCA Weight"];
+    const rows = filtered.map((t) => [
+      `${t.from}-${t.to}`,
+      t.fromCity,
+      t.toCity,
+      t.cabin,
+      t.airline,
+      t.price,
+      t.change === "drop" ? -t.changePct : t.changePct,
+      (t.weight * 100).toFixed(3) + "%"
+    ]);
+    const csv = [header.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `aerodex-panel-routes.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [filtered]);
+
   return (
     <div className="pb-16 pt-8">
       {/* ── Header ── */}
       <div className="animate-fade-up mb-6">
         <DataSourceBanner />
       </div>
-      <div className="animate-fade-up mb-6" style={{ animationDelay: "40ms" }}>
-        <div className="mb-2 flex items-center gap-2">
-          <div className="h-5 w-1 rounded-full bg-aero-primary" />
-          <span className="aero-label">60-route panel</span>
+      <div className="animate-fade-up mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end" style={{ animationDelay: "40ms" }}>
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <div className="h-5 w-1 rounded-full bg-aero-primary" />
+            <span className="aero-label">60-route panel</span>
+          </div>
+          <h1 className="text-3xl font-bold leading-tight text-aero-dark sm:text-4xl">
+            Stratum Analytics
+          </h1>
+          <p className="mt-1 max-w-2xl text-sm text-aero-mid">
+            Every O–D pair in the panel, with its median fare, movement since the previous
+            collection period, and DGCA weight.
+          </p>
         </div>
-        <h1 className="text-3xl font-bold leading-tight text-aero-dark sm:text-4xl">
-          Route tracking
-        </h1>
-        <p className="mt-1 max-w-2xl text-sm text-aero-mid">
-          Every O–D pair in the panel, with its median fare, movement since the previous
-          collection period, and DGCA weight.
-        </p>
+        <button
+          onClick={exportCsv}
+          disabled={!filtered.length}
+          className="aero-btn-primary self-start disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto"
+        >
+          <Download className="h-4 w-4" /> Export CSV
+        </button>
       </div>
 
       {error ? (
@@ -353,6 +384,7 @@ export default function PriceTrackingPage() {
               <div className="min-w-[720px]">
                 <div className={clsx("grid gap-4 border-b border-aero-border bg-aero-bg/60 px-5 py-3", GRID)}>
                   <SortBtn label="Route" col="route" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-aero-muted">Cabin</span>
                   <SortBtn label="Median fare" col="price" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortBtn label="Change" col="change" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortBtn label="Weight" col="weight" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
@@ -397,9 +429,16 @@ export default function PriceTrackingPage() {
                               {t.fromCity} → {t.toCity}
                             </div>
                             <div className="truncate text-[10px] text-aero-muted/70">
-                              cheapest on {t.airline} · {t.cabin}
+                              Min. quote: {t.airline}
                             </div>
                           </div>
+                        </div>
+
+                        {/* Cabin */}
+                        <div className="min-w-0 flex items-center">
+                          <span className="rounded-full bg-aero-primary/10 px-2 py-1 text-[11px] font-medium text-aero-primary">
+                            {t.cabin}
+                          </span>
                         </div>
 
                         {/* Price */}

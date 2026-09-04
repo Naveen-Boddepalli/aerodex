@@ -8,10 +8,12 @@ import {
 import clsx from "clsx";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell,
+  LineChart, Line,
 } from "recharts";
 import { fetchRouteDetail, RouteDetail, inr, formatDate } from "@/lib/api";
 import { ErrorBlock, Skeleton } from "@/components/states";
+import FareBreakupPanel from "@/components/FareBreakupPanel";
+
 
 /**
  * One route in depth: how its fare moved over the run, how it prices by
@@ -155,7 +157,7 @@ export default function RouteDetailPage({
             <div className="mb-4">
               <h2 className="text-base font-bold text-aero-dark">Fare over the collection run</h2>
               <p className="mt-0.5 text-[11px] text-aero-muted">
-                Median across all seven booking horizons, and the cheapest quote collected each day.
+                Median across all seven booking horizons, and the minimum quote collected each day.
               </p>
             </div>
             <div className="h-72">
@@ -183,27 +185,27 @@ export default function RouteDetailPage({
                   />
                   <Tooltip content={<SeriesTooltip />} />
                   <Area type="monotone" dataKey="median" name="median" stroke="#2456E8" strokeWidth={2} fill="url(#rd-median)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} isAnimationActive={false} />
-                  <Area type="monotone" dataKey="best" name="cheapest" stroke="#12B76A" strokeWidth={2} strokeDasharray="4 3" fill="url(#rd-best)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} isAnimationActive={false} />
+                  <Area type="monotone" dataKey="best" name="min quote" stroke="#12B76A" strokeWidth={2} strokeDasharray="4 3" fill="url(#rd-best)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} isAnimationActive={false} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {/* ── By horizon ── */}
+            {/* ── Lead-time Elasticity Curve ── */}
             <div className="aero-card animate-fade-up p-5" style={{ animationDelay: "120ms" }}>
               <div className="mb-4">
                 <h2 className="flex items-center gap-2 text-base font-bold text-aero-dark">
                   <CalendarClock className="h-4 w-4 text-aero-primary" />
-                  Price by booking horizon
+                  Lead-time Elasticity Curve
                 </h2>
                 <p className="mt-0.5 text-[11px] text-aero-muted">
-                  Cheapest quote at each of the seven horizons, collected {detail.period}.
+                  Fare by booking horizon (days before departure), collected {detail.period}.
                 </p>
               </div>
               <div className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={detail.byHorizon} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <LineChart data={detail.byHorizon} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#DDE4F5" vertical={false} />
                     <XAxis
                       dataKey="horizon_days"
@@ -211,6 +213,7 @@ export default function RouteDetailPage({
                       axisLine={false}
                       tickLine={false}
                       tickFormatter={(v) => `${v}d`}
+                      reversed={true} // Read right-to-left as departure approaches
                     />
                     <YAxis
                       tick={{ fontSize: 11, fill: "#8A99BB" }}
@@ -220,7 +223,7 @@ export default function RouteDetailPage({
                       width={42}
                     />
                     <Tooltip
-                      cursor={{ fill: "#EBF1FF" }}
+                      cursor={{ stroke: "#EBF1FF", strokeWidth: 2 }}
                       content={({ active, payload }) => {
                         if (!active || !payload?.length) return null;
                         const p = payload[0].payload as RouteDetail["byHorizon"][number];
@@ -230,7 +233,7 @@ export default function RouteDetailPage({
                               {p.horizon_days} days out · departs {formatDate(p.departure_date)}
                             </p>
                             <p className="mt-1 text-sm font-bold text-aero-dark">
-                              {inr(p.best_fare)} <span className="text-[10px] font-medium text-aero-muted">cheapest</span>
+                              {inr(p.best_fare)} <span className="text-[10px] font-medium text-aero-muted">min quote</span>
                             </p>
                             <p className="text-[11px] text-aero-mid">
                               {inr(p.median_fare)} median · {p.n_quotes} quotes
@@ -239,19 +242,8 @@ export default function RouteDetailPage({
                         );
                       }}
                     />
-                    <Bar dataKey="best_fare" radius={[6, 6, 0, 0]} isAnimationActive={false}>
-                      {detail.byHorizon.map((h) => (
-                        <Cell
-                          key={h.horizon_days}
-                          fill={
-                            h.best_fare === Math.min(...detail.byHorizon.map((x) => x.best_fare))
-                              ? "#12B76A"
-                              : "#2456E8"
-                          }
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
+                    <Line type="monotone" dataKey="best_fare" stroke="#2456E8" strokeWidth={2} dot={{ r: 4, strokeWidth: 2, fill: "#FFF" }} activeDot={{ r: 6, strokeWidth: 0 }} isAnimationActive={false} />
+                  </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
@@ -264,7 +256,7 @@ export default function RouteDetailPage({
                   Carriers quoting this route
                 </h2>
                 <p className="mt-0.5 text-[11px] text-aero-muted">
-                  Cheapest first, {detail.period}.
+                  Ordered by minimum quote, {detail.period}.
                 </p>
               </div>
               <div className="divide-y divide-aero-border">
@@ -293,11 +285,23 @@ export default function RouteDetailPage({
             </div>
           </div>
 
+          {/* ── Fare Component Decomposition ── */}
+          <div className="mt-6 animate-fade-up" style={{ animationDelay: "240ms" }}>
+            <FareBreakupPanel
+              totalFare={last?.median ?? 0}
+              route={`${detail.origin}-${detail.destination}`}
+              medianFare={detail.series.length > 7
+                ? detail.series.slice(-7).reduce((s, p) => s + p.median, 0) / 7
+                : last?.median}
+            />
+          </div>
+
           {detail.notice && (
             <p className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[11px] leading-relaxed text-amber-800">
               {detail.notice}
             </p>
           )}
+
         </>
       )}
     </div>
