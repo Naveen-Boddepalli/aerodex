@@ -1,0 +1,458 @@
+{
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Real-time airfare price index for India (SIH 2026, PS SIH26056, MoSPI). Responses carry `data_source`: `database` for collected data, `demo-synthetic` for the frozen fixture run in demo/.",
+    "title": "AeroDex API",
+    "version": "0.2.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/alerts": {
+      "get": {
+        "description": "Threshold crossings across the panel.\n\nEach route's threshold is its own median fare over the first half of the\ncollection window. Routes below their line are triggered; the rest are\nwatching. There is no per-user alert store yet \u2014 these are derived, so the\ndashboard shows real crossings rather than an invented inbox.",
+        "operationId": "alerts_api_v1_alerts_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 60,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Alerts Api V1 Alerts Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Alerts"
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "description": "Which data source the API is actually serving from.\n\nThe probe runs a statement rather than only opening a socket: a connection\nthat cannot answer ``SELECT 1`` is not a source the dashboard can be told\nit is reading from. The three database states are distinct on purpose \u2014\n``unavailable`` is the expected demo case, ``error`` is not.",
+        "operationId": "health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Health Api V1 Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    },
+    "/api/v1/health/nodes": {
+      "get": {
+        "description": "Collection volume by region.",
+        "operationId": "health_nodes_api_v1_health_nodes_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Health Nodes Api V1 Health Nodes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health Nodes"
+      }
+    },
+    "/api/v1/index/history": {
+      "get": {
+        "description": "Headline index series plus per-route fare series over the same periods.",
+        "operationId": "index_history_api_v1_index_history_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 7,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Index History Api V1 Index History Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Index History"
+      }
+    },
+    "/api/v1/index/latest": {
+      "get": {
+        "description": "Latest index value plus provenance \u2014 mirrors index_latest.json (plan \u00a75.6).",
+        "operationId": "index_latest_api_v1_index_latest_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Index Latest Api V1 Index Latest Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Index Latest"
+      }
+    },
+    "/api/v1/methodology": {
+      "get": {
+        "description": "Methodology configuration \u2014 mirrors methodology.json (plan \u00a75.6).",
+        "operationId": "methodology_api_v1_methodology_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Methodology Api V1 Methodology Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Methodology"
+      }
+    },
+    "/api/v1/pipeline/status": {
+      "get": {
+        "description": "Provenance, quality gates and compliance rules behind the current run.",
+        "operationId": "pipeline_status_api_v1_pipeline_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Pipeline Status Api V1 Pipeline Status Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Pipeline Status"
+      }
+    },
+    "/api/v1/routes": {
+      "get": {
+        "description": "The panel definition \u2014 every O\u2013D pair with its DGCA weight and airports.\n\nAlso returns the map projection bounds so the dashboard's route map does not\nhard-code a gazetteer.\n\nThe fares attached to each route are observations, so this response carries\nprovenance like every other: the route map draws rupee values, and a\nfixture fare drawn on a map is exactly as much a non-measurement as one\ndrawn on a chart.",
+        "operationId": "routes_api_v1_routes_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Routes Api V1 Routes Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Routes"
+      }
+    },
+    "/api/v1/routes/trackers": {
+      "get": {
+        "description": "Per-route tracker cards: fare now, change since the last period, sparkline.",
+        "operationId": "routes_trackers_api_v1_routes_trackers_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 60,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Routes Trackers Api V1 Routes Trackers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Routes Trackers"
+      }
+    },
+    "/api/v1/routes/{origin}/{destination}": {
+      "get": {
+        "description": "One route in depth: fare by booking horizon, by carrier, and over time.",
+        "operationId": "route_detail_api_v1_routes__origin___destination__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "origin",
+            "required": true,
+            "schema": {
+              "title": "Origin",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "destination",
+            "required": true,
+            "schema": {
+              "title": "Destination",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Route Detail Api V1 Routes  Origin   Destination  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Route Detail"
+      }
+    },
+    "/api/v1/search": {
+      "get": {
+        "description": "The quotes the panel holds for one route and booking horizon.\n\nThis is a query over collected quotes, not a booking search \u2014 AeroDex\nmeasures fares, it does not sell them.",
+        "operationId": "search_api_v1_search_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "origin",
+            "required": true,
+            "schema": {
+              "title": "Origin",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "destination",
+            "required": true,
+            "schema": {
+              "title": "Destination",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "horizon",
+            "required": false,
+            "schema": {
+              "default": 7,
+              "title": "Horizon",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Search Api V1 Search Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search"
+      }
+    }
+  }
+}

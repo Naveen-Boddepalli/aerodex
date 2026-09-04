@@ -19,7 +19,8 @@ this README covers how to run what exists today.
 [Architecture](#architecture) · [Methodology](#methodology) ·
 [CLI](#cli-reference) · [HTTP API](#http-api) · [Dashboard](#dashboard) ·
 [Configuration](#configuration) · [Data & provenance](#data--provenance) ·
-[Testing](#testing) · [Compliance](#compliance) · [Contributing](#contributing)
+[Testing](#testing) · [Compliance](#compliance) · [Documentation](#documentation) ·
+[Contributing](#contributing)
 
 ---
 
@@ -141,6 +142,11 @@ it reads the field rather than assuming.
 ```bash
 uv run uvicorn aerodex.api:app --reload --port 8000
 ```
+
+The endpoint summary below is enough to explore. The full reference — field
+tables, error codes, stability guarantees and known limitations — is in
+[docs/API.md](docs/API.md), with a machine-readable contract at
+[docs/openapi.json](docs/openapi.json).
 
 ### 3. The dashboard alone
 
@@ -434,6 +440,8 @@ the API, so CORS never enters the picture in development.
 | Variable | Used by | Default | Meaning |
 | --- | --- | --- | --- |
 | `AERODEX_DSN` | pipeline, API | — | Postgres connection string. Unset ⇒ API falls back to `demo/` |
+| `AERODEX_DB_CONNECT_TIMEOUT_S` | pipeline, API | `5` | Connection timeout. libpq defaults to *none*, which hangs on a filtered host. Ignored when the DSN sets its own |
+| `AERODEX_DB_PROBE_TTL_S` | API | `30` | How long an "unreachable" verdict is cached, so demo mode does not attempt a connection per request |
 | `AERODEX_CORS_ORIGINS` | API | — | Extra allowed origins, comma-separated |
 | `AERODEX_API_ORIGIN` | frontend build | `http://127.0.0.1:8000` | Where Next proxies `/api/*` |
 | `NEXT_PUBLIC_API_URL` | frontend runtime | `""` (same-origin) | Bypass the proxy, call an API directly |
@@ -502,8 +510,10 @@ published number months later.
 uv run pytest -q
 ```
 
-148 pass, 7 skip without a database (the `SKIP LOCKED` queue tests). Bring up
+183 pass, 8 skip without a database (the `SKIP LOCKED` queue tests). Bring up
 `docker compose up -d` and set `AERODEX_DSN` to run those too.
+
+What each layer actually guarantees is in [docs/TESTING.md](docs/TESTING.md).
 
 ```bash
 uv run pytest tests/golden -q            # the M6 guarantee
@@ -529,6 +539,27 @@ coverage ratio is published — redundancy instead of evasion.
 
 These live in `aerodex/compliance.py` as assertions, so violating one requires
 deliberately editing a file called `compliance.py`.
+
+---
+
+## Documentation
+
+This README is the entry point. The reference material lives in
+[`docs/`](docs/), indexed by [docs/README.md](docs/README.md).
+
+| Document | For |
+| --- | --- |
+| [docs/API.md](docs/API.md) | Consuming the index programmatically — endpoints, fields, the provenance contract, errors, stability, limitations |
+| [docs/DATA_DICTIONARY.md](docs/DATA_DICTIONARY.md) | Every stored field, and how PS SIH26056's required metadata maps onto the schema |
+| [docs/OPERATIONS.md](docs/OPERATIONS.md) | Deploying, scheduling, monitoring, and the incident runbook |
+| [docs/TESTING.md](docs/TESTING.md) | What each test layer guarantees, and where the gaps are |
+| [docs/openapi.json](docs/openapi.json) | Machine-readable API contract |
+| [plan.md](plan.md) | The design rationale. `plan §5.5` references in the code point here |
+| [scripts/backtest/output/backtest_report.md](scripts/backtest/output/backtest_report.md) | The 30-day back-test against DGCA and MoSPI CPI references |
+
+Every reference document carries a "known limitations" section. That is
+deliberate: a reviewer who finds a gap we already named loses less confidence
+than one who finds a gap we concealed.
 
 ---
 

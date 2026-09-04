@@ -26,6 +26,8 @@ jobs:
         run: uv run python -m aerodex.cli init-db
       - name: Lint
         run: uv run ruff check .
+      - name: API contract is current
+        run: uv run python scripts/export_openapi.py --check
       - name: Tests
         run: uv run pytest -q --ignore=tests/canary
       - name: Golden / M6 reproducibility
