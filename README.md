@@ -1,9 +1,3 @@
----
-updated: 2026-08-25T05:51:17.086Z
-editedBy: praneeth132006
-generator: https://forkleaf.vercel.app
----
-
 # AeroDex
 
 Real-time airfare price index for India — SIH 2026, PS SIH26056 (MoSPI).
