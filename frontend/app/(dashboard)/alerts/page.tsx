@@ -266,7 +266,9 @@ export default function AlertsPage() {
                   These are derived, not subscribed. Each route&apos;s threshold is the{" "}
                   {res.alerts[0]?.basis ?? "median of its daily minimum quote over the run"},
                   rounded to ₹100. A route is listed as a statistical outlier when the minimum quote
-                  collected today falls below this baseline.
+                  collected today falls below this baseline. Per-user alerts with Telegram delivery
+                  are not built yet — rather than mock an inbox, this page shows the crossings the
+                  panel actually contains.
                 </div>
               </div>
             </div>
