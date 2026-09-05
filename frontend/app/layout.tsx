@@ -1,20 +1,8 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 
-/**
- * Self-hosted at build time by `next/font`, so rendering the dashboard makes no
- * request to Google. The demo is meant to run on a laptop with no network; a
- * webfont fetched from a CDN is exactly the dependency that breaks in a hall
- * with bad wifi, and it takes the typography down with it.
- *
- * Inter is a variable font, so one axis covers every weight the design uses.
- */
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
-});
+// Replaced Inter with system-ui to prevent sandbox network issues during build/dev
+const inter = { variable: "--font-inter" };
 
 export const metadata: Metadata = {
   title: "AeroDex — Airfare Price Index for India",
