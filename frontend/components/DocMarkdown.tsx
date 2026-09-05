@@ -17,7 +17,7 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ExternalLink } from "lucide-react";
-import { resolveDocHref } from "@/lib/docs";
+import { resolveDocHref, slugifyHeading } from "@/lib/docs";
 
 /**
  * Pull the plain text out of a React subtree.
@@ -36,13 +36,15 @@ function textOf(node: React.ReactNode): string {
   return "";
 }
 
-/** GitHub's anchor scheme, so links written for the repo keep working here. */
+/**
+ * Heading id, from whatever React actually rendered.
+ *
+ * The slug rule itself lives in lib/docs so the sidebar derives identical ids
+ * from raw markdown — two copies of this would drift and break every section
+ * link without failing anything.
+ */
 function slugify(children: React.ReactNode): string {
-  return textOf(children)
-    .trim()
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/ /g, "-");
+  return slugifyHeading(textOf(children));
 }
 
 export default function DocMarkdown({ body }: { body: string }) {

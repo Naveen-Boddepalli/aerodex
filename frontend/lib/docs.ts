@@ -70,6 +70,28 @@ export function docBySlug(slug: string): DocMeta | undefined {
   return DOCS.find((d) => d.slug === slug);
 }
 
+/** One heading in a rendered document, for the sidebar's section list. */
+export interface DocHeading {
+  id: string;
+  text: string;
+  level: 2 | 3;
+}
+
+/**
+ * GitHub's anchor scheme.
+ *
+ * The single definition on purpose: the sidebar builds hrefs from raw markdown
+ * while the renderer builds ids from React children, and if those two ever
+ * disagree every section link silently scrolls nowhere. Both call this.
+ */
+export function slugifyHeading(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/ /g, "-");
+}
+
 /**
  * Resolve a `rel` path against `base`, both POSIX-style. A four-line stand-in
  * for `path.posix.join` + `normalize`, so this module stays Node-free.

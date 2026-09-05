@@ -18,7 +18,7 @@ import "server-only";
 import fs from "node:fs";
 import path from "node:path";
 
-import { type DocMeta, docBySlug } from "./docs";
+import { type DocHeading, type DocMeta, docBySlug, slugifyHeading } from "./docs";
 
 /** `docs/` lives one level above the Next app root. */
 const DOCS_DIR = path.join(process.cwd(), "..", "docs");
@@ -28,6 +28,55 @@ export interface LoadedDoc extends DocMeta {
   body: string;
   /** The H1 text that was removed, when there was one. */
   heading: string | null;
+  /** H2/H3 sections, in document order, for the sidebar. */
+  headings: DocHeading[];
+}
+
+/**
+ * Strip the inline markdown that never reaches the rendered heading text.
+ *
+ * The renderer slugifies what React actually rendered, so `## \`quote_raw\``
+ * becomes the id "quote_raw" — the backticks are gone by then. Extracting from
+ * raw markdown has to remove them here to arrive at the same string.
+ */
+function stripInline(text: string): string {
+  return text
+    .replace(/`([^`]*)`/g, "$1")             // code spans
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")   // links -> their text
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")       // bold
+    .replace(/(\*|_)(.*?)\1/g, "$2")          // italic
+    .trim();
+}
+
+/**
+ * Collect H2 and H3 headings in document order.
+ *
+ * Fence-aware: OPERATIONS.md alone carries three "#" comment lines inside bash
+ * blocks, and a naive line scan would list them as sections that scroll
+ * nowhere.
+ */
+function extractHeadings(markdown: string): DocHeading[] {
+  const out: DocHeading[] = [];
+  let inFence = false;
+
+  for (const line of markdown.split("\n")) {
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+
+    const m = /^(#{2,3})\s+(.*)$/.exec(line);
+    if (!m) continue;
+    const text = stripInline(m[2]);
+    if (!text) continue;
+    out.push({
+      id: slugifyHeading(text),
+      text,
+      level: m[1].length === 2 ? 2 : 3,
+    });
+  }
+  return out;
 }
 
 /**
@@ -51,6 +100,11 @@ export function loadDoc(slug: string): LoadedDoc {
   }
 
   const match = raw.match(/^#\s+(.+)\n/);
-  const body = match ? raw.slice(match[0].length) : raw;
-  return { ...meta, body: body.trimStart(), heading: match ? match[1].trim() : null };
+  const body = (match ? raw.slice(match[0].length) : raw).trimStart();
+  return {
+    ...meta,
+    body,
+    heading: match ? match[1].trim() : null,
+    headings: extractHeadings(body),
+  };
 }
