@@ -37,8 +37,10 @@ would bloat it.
 | Document | Contents |
 | --- | --- |
 | [SIH26056_submission.md](SIH26056_submission.md) | Draft submission language: the estimated fare decomposition, source-coverage audit, and the compliance/evasion trade-off narrative |
+| [research/INTERNATIONAL_AIRFARE_INDEX_PRACTICE.md](research/INTERNATIONAL_AIRFARE_INDEX_PRACTICE.md) | How China, the US, the UK, Australia and the EU put airfares into an official price index; why India's CPI carried only international airfare until the 2024 series; and what India should do (mandate + NSO scraping unit). Positions AeroDex as the near-term step |
 | [sih-deck.html](sih-deck.html) | Presentation deck |
 | [project-status.html](project-status.html) | Status snapshot |
+| `AeroDex-airfare-index-benchmarking.pptx` | 17-slide deck of the international-practice research: China / US / UK / AU / EU case studies, stats tables, charts, why India lags, the sequenced fix, and speaker talking points. Built from [research/INTERNATIONAL_AIRFARE_INDEX_PRACTICE.md](research/INTERNATIONAL_AIRFARE_INDEX_PRACTICE.md) |
 | `AeroDex-SIH2026-Idea.pptx`, `AeroDex-SIH-2026-Idea-Submission.pptx` | Idea-stage submission decks |
 
 ## Spike S3 — source feasibility

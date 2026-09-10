@@ -104,9 +104,12 @@ def _db_session():
         yield None
         return
 
-    from aerodex.db.connection import connect
-
     try:
+        # Imported here, inside the try: a deployment that ships without psycopg
+        # (the static demo API on Vercel) treats "driver not installed" the same
+        # as "database down" and serves demo/ rather than 500ing every request.
+        from aerodex.db.connection import connect
+
         ctx = connect()
         conn = ctx.__enter__()
     except Exception as exc:
@@ -197,7 +200,7 @@ app.add_middleware(
         "http://127.0.0.1:3010",
         *_extra_origins,
     ],
-    allow_origin_regex=r"https://.*\.pages\.dev",
+    allow_origin_regex=r"https://.*(\.vercel\.app|\.pages\.dev)",
     allow_credentials=True,
     allow_methods=["GET"],
     allow_headers=["*"],

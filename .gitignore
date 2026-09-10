@@ -17,3 +17,5 @@ scratch_playwright.py
 
 # Office lock files — PowerPoint/Word write these next to an open document.
 ~$*
+.vercel
+.env*

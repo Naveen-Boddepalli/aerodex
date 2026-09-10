@@ -7,11 +7,16 @@ import type { NextConfig } from "next";
  * Point it elsewhere with AERODEX_API_ORIGIN (e.g. a Cloudflare Tunnel URL).
  * To bypass the proxy entirely and call a deployed API directly, set
  * NEXT_PUBLIC_API_URL instead — `lib/api.ts` prefixes every request with it.
+ *
+ * On Vercel this rewrite is disabled: `/api/*` is served in the same project by
+ * the Python function (`api/index.py`, wired in `vercel.json`), so the request
+ * is already same-origin and proxying it through Next would only add a hop.
  */
 const API_ORIGIN = process.env.AERODEX_API_ORIGIN ?? "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
   async rewrites() {
+    if (process.env.VERCEL) return [];
     return [
       {
         source: "/api/:path*",

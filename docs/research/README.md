@@ -76,6 +76,17 @@ FINAL S3/S4          docs/research/  (this level)             OPTION B — cheap
 
 ---
 
+## Related: international practice
+
+Not part of the S3 source-feasibility chain. Background for the SIH pitch —
+how the same problem is solved abroad and why India lags.
+
+| File | What it answers |
+|---|---|
+| [`INTERNATIONAL_AIRFARE_INDEX_PRACTICE.md`](INTERNATIONAL_AIRFARE_INDEX_PRACTICE.md) | Case studies (China, US, UK, Australia, EU) on how airfares enter an official price index, why domestic airfare is only now entering India's CPI, and a sequenced set of recommendations. AeroDex is the near-term recommendation. |
+
+---
+
 ## Unresolved questions
 
 | # | Question | Blocks? |
