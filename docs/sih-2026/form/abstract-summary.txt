@@ -1,0 +1,18 @@
+AeroDex is a daily, reproducible Domestic Airfare Price Index (DAPI) for India, designed to augment the Consumer Price Index under PS SIH26056 (MoSPI).
+
+THE GAP. The CPI prices airfare about once a month, but airfares move several times a day and depend far more on how far ahead a seat is booked than on the calendar month. A monthly snapshot cannot show the size or the shape of that movement.
+
+THE IDEA. AeroDex prices a fixed panel of 60 domestic routes (23 airports) at 7 booking horizons (1 to 60 days ahead), three times a day, giving 420 strata. It turns the quotes into a daily airfare index using the method a statistical office would recognise: matched-model Jevons elementary indices, aggregated with a Lowe index on DGCA 2025 city-pair passenger-traffic weights. MoSPI's own CPI 2024 series uses the same Jevons-plus-Laspeyres-family combination, and the multi-horizon, carrier-attributed panel follows the IMF technical-assistance recommendation to MoSPI.
+
+WHAT MAKES IT DIFFERENT.
+- Reproducible by construction: the index is a pure function of an archived panel and a hashed methodology file. One command, "aerodex verify", re-derives any published number and checks its SHA-256. A nightly CI job repeats the check, and 11 golden tests freeze the published values.
+- Refuses to overstate: the publisher will not release a run built only from synthetic data, or one where more than 5 percent of the index weight had to be imputed. Coverage failures are published, not hidden. Every point ships with its coverage ratio, imputed weight share, quote count and hashes.
+- Compliance-first sourcing: a three-tier source ladder (institutional MoSPI/DGCA feed as the target, a licensed fare-search API for the MVP, and a fixture for tests only). No CAPTCHA solving, no proxy rotation, no personal data, robots.txt honoured.
+
+WHAT WORKS TODAY. The pipeline (scheduler, adapter, normalise, validate, append-only store, index, publish) runs end to end on a deterministic fixture, with 183 automated tests passing. An 11-endpoint FastAPI service and a 9-screen Next.js dashboard present the index, a 60-route panel table, an origin-destination movement heat map, index history with CSV export, outliers and the methodology. DGCA traffic weights are real. The demo fares are synthetic, and the dashboard and API label them "not a measurement" on every page and response.
+
+WHAT COMES NEXT. A licensed fare-search adapter (about 25 USD for a 30-day demo, about 99 USD a month for the full panel), 30 days of real quotes and a real back-test against DGCA and CPI references; then hedonic quality adjustment, seasonal adjustment and, in parallel, an institutional data feed under statutory authority.
+
+IMPACT. MoSPI gets a sub-monthly, route-level airfare signal with its quality disclosed. DGCA gets a continuous, horizon-controlled series in place of tariff spot checks. Travellers and researchers get an open dashboard, API and method. The reproducibility machinery is reusable for any high-frequency price collection, and a zero-rupee-recurring configuration exists for ministry handover.
+
+Code: https://github.com/Naveen-Boddepalli/aerodex

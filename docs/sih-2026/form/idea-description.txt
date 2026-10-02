@@ -1,0 +1,113 @@
+AERODEX - A REPRODUCIBLE DAILY AIRFARE PRICE INDEX FOR INDIA
+Smart India Hackathon 2026 | PS SIH26056 | Ministry of Statistics and Programme Implementation (MoSPI), Data Informatics & Innovation Division
+
+1. THE PROBLEM
+
+The Consumer Price Index prices airfare about once a month. Airfares do not behave like other items in the basket. The same seat on the same flight can cost three different amounts on three consecutive days, and the price a traveller pays depends far less on the calendar month than on how far ahead they book. A single monthly snapshot cannot show the size or the shape of that movement, and nothing in the statistical system measures it today.
+
+Three things make this hard, and any credible solution has to face all three:
+- Dynamic pricing: a fare is only meaningful if you fix WHEN before departure it was observed. "The Delhi-Mumbai fare" is not a number. "The cheapest one-way economy fare, seen 21 days before a mid-week departure" is.
+- Booking-horizon structure: 60-day and 1-day fares are different products. If the horizon is not held constant, price movement is confounded with how far ahead the sample happened to look.
+- No free fare feed: Amadeus closed its free self-service tier on 17 July 2026, online travel agents' terms bar systematic automated retrieval, and airlines do not publish machine-readable fares.
+
+Why has this not been solved already? We researched how China, the United States, the United Kingdom, Australia and the Netherlands do it. Every country that measures airfares well owns a data tap: a state reservation system (China), a mandatory ticket-sample filing (United States), or a statistics-office web-scraping unit working on a fixed route panel (UK, Australia, Netherlands). India has none of the three yet. Airlines formally declined DGCA's request for passenger-level fare data in March 2026. A web-collected index is therefore the right first step, but it has to be built to the standard of an official statistic, or it will not be trusted.
+
+2. OUR IDEA
+
+AeroDex prices a fixed panel of 60 domestic routes at 7 booking horizons, three times a day, and publishes a daily, DGCA-weighted airfare index (the Domestic Airfare Price Index, DAPI) that anyone can recompute from its published inputs. It gives the CPI a sub-monthly, route-level signal that it does not have today.
+
+The central design idea: a published number is only worth as much as a third party's ability to reproduce it. So AeroDex is built so that every published index point ships with its own evidence: the coverage ratio, the share of weight that had to be imputed, the number of quotes, and SHA-256 hashes of the methodology configuration, the input panel and the output. One command re-derives the number from the archived inputs.
+
+3. HOW IT WORKS - THE PIPELINE
+
+Seven stages, each independently testable:
+1. Schedule - systemd timers fire collection at three fixed IST slots a day (07:00, 13:00, 20:00, plus or minus 15 minutes).
+2. Acquire - a three-tier source ladder (see section 6) behind one adapter interface, with a robots.txt and rate-limit guard.
+3. Normalise - de-duplicate quotes, tag attributes (stops, departure-time bucket, carrier type, duration), keep the all-inclusive fare a traveller actually pays.
+4. Validate - plausibility bounds; implausible quotes are quarantined, not deleted.
+5. Store - an append-only archive of raw quotes; UPDATE, DELETE and TRUNCATE are blocked by database triggers, so history cannot be rewritten.
+6. Index - a pure function of (panel, methodology config): no clock, no database, no network inside it.
+7. Publish - static JSON artifacts, a read-only FastAPI service and a dashboard. The publisher REFUSES to release a run it cannot stand behind.
+
+4. INDEX METHODOLOGY
+
+- Panel: 60 directional origin-destination pairs across 23 airports and 6 origin hubs, economy cabin. Booking horizons of 1, 3, 7, 14, 21, 30 and 60 days before departure. One stratum is one route at one horizon, so 60 x 7 = 420 strata. Nominal load is 1,260 stratum-slots a day, about 1,155 after overlap suppression (a stratum already collected less than 4 hours earlier is skipped).
+- Elementary index: matched-model Jevons, the geometric mean of price relatives. Within each stratum the same itineraries are compared between consecutive periods, using the median fare per itinerary. Relatives outside 0.2 to 5.0 are treated as data errors. A stratum needs at least 3 matched quotes to report an observed relative; otherwise it is imputed.
+- Aggregation: Lowe index using DGCA 2025 city-pair passenger traffic as weights (weight vintage dgca-2025-city-pairs-r2). All 60 routes carry a weight, summing to 1. A route's weight is split evenly across its horizons and renormalised over routes that actually reported.
+- Imputation: a missing stratum takes the geometric-mean movement of its horizon group. The imputed share of index weight is published with every point and capped at 5 percent. Above the cap the run is refused. If a stratum has no group sibling that reported, it stays missing rather than being invented from a global mean.
+- Base and revision: base 2026-09 = 100. Provisional for 7 days, revised once, then frozen.
+- Why these choices: Jevons is the modern default for elementary aggregates (Carli has a known upward bias; Dutot is not unit-invariant). Lowe suits fixed weights from a period before the base. MoSPI's own CPI 2024 FAQ states that it uses Jevons for elementary indices and a Young / modified-Laspeyres form above them, so AeroDex uses the same family.
+- On the roadmap, not yet implemented: hedonic quality adjustment (log-fare regression on stops, departure bucket, carrier type, duration, refundability, baggage) and seasonal adjustment (STL / X-13). The methodology file already describes them; both need real data volume first.
+
+5. WHAT MAKES IT DIFFERENT
+
+- Reproducible by construction. compute_index() is a pure function. The same archived panel and configuration always give the same SHA-256 output. 11 golden tests freeze the published numbers, and a GitHub Actions job recomputes an archived panel every night at 02:00 IST and fails if the hash moves.
+- Refuses to overstate. The publisher blocks any run made only from synthetic sources, and any run above 5 percent imputed weight. A coverage failure is published, not hidden. A companion "breach" dataset in the repository shows the refusal firing.
+- Horizon-controlled. Fixed advance-purchase windows separate a real fare rise from travellers simply booking later. The IMF technical-assistance recommendation to MoSPI asks for exactly this: a greater variety of advance-purchase timings (14 and 21 days, not only 7) and the airline treated as a price-determining characteristic.
+- Built to statistical-office method, and documented like one: a methodology document, a data dictionary, an API contract, an operations runbook and a testing guide are part of the repository.
+- Honest about its inputs. Every API response carries a data_source field. Anything rendered from fixture data carries a visible label: "Synthetic demo data - not a measurement".
+
+6. DATA SOURCES AND COMPLIANCE
+
+The problem statement itself requires compliance with robots.txt and terms of service, so we treat compliance as a hard constraint rather than an obstacle. Source access is a three-tier ladder behind a single adapter interface:
+- Tier 1, institutional feed: MoSPI's CPI 2024 FAQ states that airfares are collected through well-known online platforms, the Collection of Statistics Act, 2008 empowers the Government to require statistical information, and the Expert Group Report records that DGCA already holds minimum and maximum tariff data for all routes. Request letters to MoSPI and DGCA are drafted. This is the long-term target.
+- Tier 2, licensed fare-search API: after assessing 20 providers on 29 axes (recorded in docs/research/), the decision recorded on 25 August 2026 is a licensed Google-Flights-derived search API. A 30-day demo run costs about 25 USD; the full 60-route panel about 99 USD a month (provider pages read on 25 August 2026). A second provider is the backup. This tier is the next build.
+- Tier 3, deterministic fixture: used for the demo and for tests only. The publisher refuses any index built on it.
+Direct scraping of online-travel-agent pages is deliberately not built, because their terms bar automated access. Rules enforced in code: no personal data (DPDP Act, 2023), no CAPTCHA solving, no fingerprint spoofing, no proxy rotation, robots.txt honoured and a 20-second per-host floor for any host we hold no contract with.
+
+7. TECHNOLOGY STACK
+
+- Language and data: Python 3.12, pandas, NumPy, Pydantic.
+- Storage: PostgreSQL 16 with TimescaleDB; append-only raw quote archive enforced by triggers; a Postgres FOR UPDATE SKIP LOCKED job queue.
+- Collection: httpx; our own RFC 9309 robots.txt parser; systemd timers (not cron, to avoid 10-30 minute scheduler drift).
+- Serving: FastAPI and Uvicorn (11 read-only endpoints); Next.js 16, React 19, TypeScript, Tailwind CSS v4 and Recharts for the dashboard.
+- Assurance: pytest, ruff, mypy, GitHub Actions (CI plus the nightly reproducibility check).
+- Hosting: the API runs on Vercel today. The permanent-free-tier target for a ministry handover is Cloudflare R2 and Pages with a small Oracle Cloud VM (2 OCPU, 12 GB), giving a zero-rupee recurring cost.
+
+8. WORKING PROTOTYPE - WHAT EXISTS TODAY (24 September 2026)
+
+- The full pipeline runs end to end: scheduler, adapter, normalise, validate, store, index, publish, on a deterministic fixture source.
+- 183 automated tests pass (8 more are skipped without a live Postgres). 11 golden tests freeze the published numbers.
+- The command "aerodex verify" recomputes the archived demo panel and reports REPRODUCIBLE, with the weighted output hash matching.
+- DGCA traffic weights are real: 2025 city-pair passenger data, all 60 routes weighted.
+- A 9-screen dashboard (index and indicators, panel query, 60-route table, origin-destination movement heat map, index history with CSV export, outliers, methodology, route detail, documentation) on an 11-endpoint API.
+- The demo dataset is 30 daily periods x 60 routes x 7 horizons = 75,552 rows. THESE FARES ARE SYNTHETIC. The dashboard and API say so on every page and response, and the publisher refuses to release them as a measurement.
+- Source code: https://github.com/Naveen-Boddepalli/aerodex
+- Live API (demo data): https://aerodex-api-delta.vercel.app/docs
+
+9. FEASIBILITY, RISKS AND HOW WE OVERCOME THEM
+
+- No lawful free fare feed. Mitigation: licensed fare-search API for the MVP; MoSPI and DGCA institutional route pursued in parallel; the zero-rupee configuration is kept for handover.
+- A source blocks us or changes its layout. Mitigation: drop the source and publish the coverage ratio; imputation is capped at 5 percent, above which the run is refused.
+- API quota and cost. Mitigation: 1,260 stratum-slots a day (about 1,155 after overlap suppression) fits a plan of about 99 USD a month.
+- Fare attributes missing from the source (fare brand, refundability). Mitigation: cut the hedonic characteristic set to the fields the source returns; the matched-model comparison stays in force.
+- Fixture data mistaken for a measurement. Mitigation: data_source tag on every response, a banner on every page, and refusal in the publisher.
+- Fare split. The dashboard shows a base / tax / fee split as an estimate from statutory rates and labels it so. The index itself uses the all-inclusive fare, which is the correct base for a consumer price index, so no published number depends on the estimate.
+- Back-test. The 30-day back-test harness exists but runs on the fixture panel; a valid back-test against DGCA data needs 30 days of real quotes. We say so plainly rather than present a synthetic result as a finding.
+
+10. IMPACT AND BENEFITS
+
+- MoSPI: a daily, route-level series beneath the monthly CPI airfare item, with coverage and imputation disclosed for every point.
+- DGCA: tariff spot checks become a continuous, horizon-controlled series showing which routes move, how early, and whether a festival window or a capacity change is driving it.
+- Travellers and researchers: an open dashboard, API and method showing what a festival window costs, how far ahead to book, and how low-cost and full-service carriers differ.
+- The wider statistical system: the append-only archive, hashed configuration, pure index function and golden tests are reusable for any high-frequency price collection.
+- Social: trust through a disclosed method and open code. Economic: about 25 USD for a 30-day demo and about 99 USD a month at full panel; a zero-rupee recurring handover configuration. Technological: an open API and a reproducible-statistics pattern. Environmental: modest, since digital collection replaces field visits for this one item.
+- Alignment: SDG target 17.18 (timely, reliable data), SDG 9, Digital India, Atmanirbhar Bharat (open-source, locally hosted).
+
+11. ROADMAP
+
+- Now: pipeline, index engine, API and dashboard, on a fixture source, with reproducibility and refusal guarantees in place.
+- Next: the licensed fare-search adapter; 30 days of real quotes; a real back-test against DGCA and CPI references.
+- Later: hedonic quality adjustment, seasonal adjustment, a validation feed, and the institutional feed under statutory authority. Beyond that, the recommendations of our international study: a transaction-level fare-reporting obligation and a real-time-prices unit inside the statistics office.
+
+12. REFERENCES
+
+- MoSPI, FAQs on the CPI 2024 series (Q20-21 on Jevons and Young; Q27 on airfare collected from online platforms).
+- MoSPI, Expert Group Report on Comprehensive Updation of the CPI (IMF TA Recommendation 11; Recommendation 11(a)).
+- ILO / IMF / OECD / UNECE / World Bank, Consumer Price Index Manual: Concepts and Methods.
+- Eurostat, Practical guidelines on web scraping for the HICP (2020).
+- US Bureau of Labor Statistics, CPI airline fares; US DOT Origin and Destination Survey, 14 CFR Part 241.
+- UK Office for National Statistics and Australian Bureau of Statistics, web scraping in consumer price statistics.
+- DGCA monthly city-pair traffic; Vonter/india-aviation-traffic (ODbL).
+- Collection of Statistics Act, 2008; RFC 9309 (Robots Exclusion Protocol).
+- AeroDex research record and decision log: docs/research/ in https://github.com/Naveen-Boddepalli/aerodex

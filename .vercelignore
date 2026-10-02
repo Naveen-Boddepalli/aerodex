@@ -1,0 +1,50 @@
+# Applies to the aerodex-api Vercel project (repo root). The Next dashboard is a
+# separate project rooted at frontend/. A .vercelignore replaces .gitignore for
+# the upload, so every excluded path is listed explicitly here.
+
+# The dashboard project — not part of the API deployment
+frontend/
+
+# Virtualenvs / build caches (huge; must never be uploaded or bundled)
+.venv/
+.vercel/
+_uv/
+node_modules/
+**/__pycache__/
+*.py[cod]
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.freebuff/
+
+# Keep the Python builder on the lean requirements.txt. If it sees
+# pyproject.toml / uv.lock it installs the whole pipeline dependency set
+# (scipy, statsmodels, boto3) and the function blows past the size limit.
+pyproject.toml
+uv.lock
+
+# VCS / editor / scratch
+.git/
+.github/
+.DS_Store
+**/.DS_Store
+*.bak
+.deploy-*.bak
+scratch_playwright.py
+
+# Not needed by the API at runtime
+tests/
+scripts/
+deploy/
+dashboard/
+docker-compose.yml
+data/
+out/
+archive/
+docs/
+plan.md
+README.md
+*.pptx
+*.pdf

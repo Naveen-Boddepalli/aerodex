@@ -1,0 +1,10 @@
+# Runtime dependencies for the Vercel Python function (api/index.py).
+# API *serving* path only — not the collection pipeline, which keeps its full
+# dependency set in pyproject.toml. Kept minimal so the serverless bundle stays
+# under Vercel's function size limit.
+#
+# No psycopg: this deployment has no database. aerodex.api imports the driver
+# lazily inside a try/except, so its absence just means "serve demo/".
+fastapi>=0.111
+pandas>=2.2
+pyyaml>=6.0

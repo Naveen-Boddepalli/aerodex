@@ -1,0 +1,6 @@
+{
+  "name": "aerodex-sih-deck",
+  "private": true,
+  "description": "Builds the SIH 2026 idea deck (PPTX + PDF) from one layout spec",
+  "dependencies": { "pptxgenjs": "^3.12.0" }
+}
